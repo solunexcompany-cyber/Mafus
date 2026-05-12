@@ -18,15 +18,6 @@ def login_access_token(
     OAuth2 compatible token login, get an access token for future requests
     """
     user = db.query(User).filter(User.email == form_data.username).first()
-    print(f"DEBUG LOGIN: username='{form_data.username}', user_found={user is not None}")
-    if user:
-        print(f"DEBUG LOGIN: hashed_password='{user.hashed_password}'")
-        try:
-            is_valid = verify_password(form_data.password, user.hashed_password)
-            print(f"DEBUG LOGIN: is_valid={is_valid}")
-        except Exception as e:
-            print(f"DEBUG LOGIN: exception in verify_password: {e}")
-
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     elif not user.is_active:

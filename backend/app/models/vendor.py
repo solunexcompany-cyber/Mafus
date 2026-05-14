@@ -2,7 +2,7 @@ import uuid
 from sqlalchemy import Column, String, Boolean, Integer, ForeignKey, Enum, JSON, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from app.db.base import Base  # Assuming you have a Base class here
+from app.db.base_class import Base
 import enum
 
 class ServiceStatus(str, enum.Enum):

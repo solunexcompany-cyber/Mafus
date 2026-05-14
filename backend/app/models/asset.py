@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy import Column, String, Integer, ForeignKey, Enum, Float
 from sqlalchemy.orm import relationship
-from app.db.base import Base
+from app.db.base_class import Base
 import enum
 
 class AssetStatus(str, enum.Enum):

@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy import Column, String, Float, ForeignKey, DateTime, Enum
-from app.db.base import Base
+from app.db.base_class import Base
 import enum
 
 class SubscriptionStatus(str, enum.Enum):

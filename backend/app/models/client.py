@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy import Column, String, ForeignKey, JSON
 from sqlalchemy.orm import relationship
-from app.db.base import Base
+from app.db.base_class import Base
 
 class Client(Base):
     __tablename__ = "clients"

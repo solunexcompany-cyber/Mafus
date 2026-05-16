@@ -45,19 +45,24 @@ def get_current_active_user(
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
-from app.models.user import RoleEnum
+from app.models.user import UserRole
 
 def get_current_dev_admin(current_user: User = Depends(get_current_active_user)) -> User:
-    if current_user.role != RoleEnum.DEV_ADMIN:
+    if current_user.role != UserRole.SUPER_ADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
     return current_user
 
 def get_current_vendor_level(current_user: User = Depends(get_current_active_user)) -> User:
-    if current_user.role not in [RoleEnum.DEV_ADMIN, RoleEnum.VENDOR_OWNER]:
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
     return current_user
 
 def get_current_master_level(current_user: User = Depends(get_current_active_user)) -> User:
-    if current_user.role not in [RoleEnum.DEV_ADMIN, RoleEnum.VENDOR_OWNER, RoleEnum.MASTER_ADMIN]:
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER, UserRole.MASTER_ADMIN]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+    return current_user
+
+def get_current_collection_officer(current_user: User = Depends(get_current_active_user)) -> User:
+    if current_user.role != UserRole.COLLECTION_OFFICER:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
     return current_user

@@ -1,185 +1,288 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
+from sqlalchemy import func as sql_func
 from app.api import deps
-from app.models.user import User, RoleEnum
-from app.models.vendor import Vendor
+from app.models.user import User, UserRole
+from app.models.vendor import Vendor, ServiceStatus
 from app.models.client import Client
-from app.schemas.user import VendorCreateRequest, MasterAdminCreateRequest, ClientCreateRequest
+from app.models.asset import Asset, AssetStatus, FinancingContract
 from app.core.security import get_password_hash
+from pydantic import BaseModel, EmailStr
+from typing import List, Optional
 
 router = APIRouter()
 
-@router.post("/vendor", status_code=status.HTTP_201_CREATED)
-def create_vendor(
+# --- SCHEMAS ---
+class ManagerCreate(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+    vendor_id: str
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    username: str
+    password: str
+    full_name: str
+    role: UserRole
+    vendor_id: Optional[str] = None
+
+class VendorUpdate(BaseModel):
+    business_name: Optional[str] = None
+    cac_number: Optional[str] = None
+    business_address: Optional[str] = None
+    contact_phone: Optional[str] = None
+    business_type: Optional[str] = None
+
+# --- HELPER: Generate Vendor Tag ---
+def generate_vendor_tag(db: Session):
+    tags = db.query(Vendor.vendor_tag).all()
+    nums = []
+    for (t,) in tags:
+        if t and t.startswith("VEN-"):
+            try:
+                nums.append(int(t.split("-")[1]))
+            except (ValueError, IndexError):
+                pass
+    max_num = max(nums) if nums else 0
+    return f"VEN-{(max_num + 1):03d}"
+
+# --- ENDPOINTS ---
+
+@router.post("/vendor", response_model=dict)
+def create_vendor_and_owner(
     *,
     db: Session = Depends(deps.get_db),
-    vendor_in: VendorCreateRequest,
-    current_user: User = Depends(deps.get_current_dev_admin)
+    name: str = Body(...),
+    owner_email: str = Body(...),
+    owner_password: str = Body(...),
+    owner_full_name: str = Body(...),
+    cac_number: Optional[str] = Body(None),
+    business_address: Optional[str] = Body(None),
+    contact_phone: Optional[str] = Body(None),
+    business_type: Optional[str] = Body(None)
 ):
-    """Create new vendor (Level 2). Only DEV_ADMIN can do this."""
-    if db.query(User).filter(User.email == vendor_in.owner_email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
-        
-    vendor = Vendor(name=vendor_in.vendor_name, address=vendor_in.vendor_address)
+    if db.query(Vendor).filter(Vendor.business_name == name).first():
+        raise HTTPException(status_code=400, detail="Vendor name already exists")
+    
+    vendor = Vendor(
+        business_name=name,
+        vendor_tag=generate_vendor_tag(db),
+        cac_number=cac_number,
+        business_address=business_address,
+        contact_phone=contact_phone,
+        business_type=business_type,
+        status=ServiceStatus.ACTIVE
+    )
     db.add(vendor)
     db.commit()
     db.refresh(vendor)
     
     user = User(
-        email=vendor_in.owner_email,
-        hashed_password=get_password_hash(vendor_in.owner_password),
-        full_name=vendor_in.owner_full_name,
-        role=RoleEnum.VENDOR_OWNER,
-        vendor_id=vendor.id
+        email=owner_email,
+        username=owner_email,
+        full_name=owner_full_name,
+        hashed_password=get_password_hash(owner_password),
+        role=UserRole.VENDOR_OWNER,
+        vendor_id=vendor.id,
+        is_active=True
     )
     db.add(user)
     db.commit()
-    return {"message": "Vendor created successfully", "vendor_id": vendor.id}
+    return {"message": "Vendor created", "vendor_id": vendor.id, "vendor_tag": vendor.vendor_tag}
 
-@router.post("/master-admin", status_code=status.HTTP_201_CREATED)
-def create_master_admin(
-    *,
-    db: Session = Depends(deps.get_db),
-    admin_in: MasterAdminCreateRequest,
-    current_user: User = Depends(deps.get_current_vendor_level)
-):
-    """Create Master Admin (Level 3). DEV_ADMIN or VENDOR_OWNER can do this."""
-    if db.query(User).filter(User.email == admin_in.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
-        
-    target_vendor_id = admin_in.vendor_id
-    if current_user.role == RoleEnum.VENDOR_OWNER:
-        target_vendor_id = current_user.vendor_id # Force to their own vendor
-    
-    if not target_vendor_id:
-        raise HTTPException(status_code=400, detail="Vendor ID is required when created by Dev Admin")
-        
-    user = User(
-        email=admin_in.email,
-        hashed_password=get_password_hash(admin_in.password),
-        full_name=admin_in.full_name,
-        role=RoleEnum.MASTER_ADMIN,
-        vendor_id=target_vendor_id
-    )
-    db.add(user)
-    db.commit()
-    return {"message": "Master Admin created successfully"}
-
-@router.post("/client", status_code=status.HTTP_201_CREATED)
-def create_client(
-    *,
-    db: Session = Depends(deps.get_db),
-    client_in: ClientCreateRequest,
-    current_user: User = Depends(deps.get_current_master_level)
-):
-    """Create Client (Level 4). DEV_ADMIN, VENDOR_OWNER, or MASTER_ADMIN can do this."""
-    if db.query(User).filter(User.email == client_in.phone_number).first():
-        raise HTTPException(status_code=400, detail="Phone number already registered as login")
-        
-    target_vendor_id = client_in.vendor_id
-    if current_user.role in [RoleEnum.VENDOR_OWNER, RoleEnum.MASTER_ADMIN]:
-        target_vendor_id = current_user.vendor_id
-        
-    if not target_vendor_id:
-        raise HTTPException(status_code=400, detail="Vendor ID is required when created by Dev Admin")
-
-    client = Client(
-        full_name=client_in.full_name,
-        phone_number=client_in.phone_number,
-        national_id=client_in.national_id,
-        address=client_in.address,
-        vendor_id=target_vendor_id
-    )
-    db.add(client)
-    db.commit()
-    db.refresh(client)
-    
-    # We use phone number as email for the user login to satisfy unique email constraint
-    user = User(
-        email=client_in.phone_number,
-        hashed_password=get_password_hash(client_in.password),
-        full_name=client_in.full_name,
-        role=RoleEnum.CLIENT,
-        vendor_id=target_vendor_id,
-        client_id=client.id
-    )
-    db.add(user)
-    db.commit()
-    return {"message": "Client created successfully", "client_id": client.id}
-
-@router.get("/vendor")
-def get_vendors(
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_dev_admin)
-):
+@router.get("/vendor", response_model=List[dict])
+def list_vendors(db: Session = Depends(deps.get_db)):
     vendors = db.query(Vendor).all()
     result = []
-    for vendor in vendors:
-        owner = db.query(User).filter(User.vendor_id == vendor.id, User.role == RoleEnum.VENDOR_OWNER).first()
+    for v in vendors:
+        owner = db.query(User).filter(User.vendor_id == v.id, User.role == UserRole.VENDOR_OWNER).first()
         result.append({
-            "id": vendor.id,
-            "name": vendor.name,
-            "address": vendor.address,
-            "is_active": vendor.is_active,
-            "owner_email": owner.email if owner else None,
-            "owner_name": owner.full_name if owner else None
+            "id": v.id,
+            "vendor_tag": v.vendor_tag,
+            "name": v.business_name,
+            "cac_number": v.cac_number or "N/A",
+            "phone": v.contact_phone or "N/A",
+            "status": v.status,
+            "reason": v.suspension_reason,
+            "owner_email": owner.email if owner else "N/A",
+            "owner_full_name": owner.full_name if owner else "N/A"
         })
     return result
 
-@router.get("/master-admin")
-def get_master_admins(
+@router.get("/vendor/{vendor_id}/details")
+def get_vendor_details(
+    vendor_id: str,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_vendor_level)
+    current_user: User = Depends(deps.get_current_active_user)
 ):
-    query = db.query(User).filter(User.role == RoleEnum.MASTER_ADMIN)
-    if current_user.role == RoleEnum.VENDOR_OWNER:
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+        
+    # Get all linked entities
+    managers = db.query(User).filter(User.vendor_id == vendor_id, User.role == UserRole.MASTER_ADMIN).all()
+    clients = db.query(Client).filter(Client.vendor_id == vendor_id).all()
+    assets = db.query(Asset).filter(Asset.vendor_id == vendor_id).all()
+    
+    return {
+        "vendor": {
+            "id": vendor.id,
+            "name": vendor.business_name,
+            "status": vendor.status,
+            "tag": vendor.vendor_tag
+        },
+        "managers": [{"id": m.id, "name": m.full_name, "email": m.email} for m in managers],
+        "clients": [{"id": c.id, "name": c.full_name, "nin": c.national_id} for c in clients],
+        "assets": [{"id": a.id, "internal_id": a.internal_id, "plate": a.plate_number, "status": a.status} for a in assets]
+    }
+
+@router.post("/vendor/{vendor_id}/status")
+def update_vendor_status(
+    vendor_id: str,
+    status: str,
+    reason: str = None,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user)
+):
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
+    vendor.status = status
+    if reason:
+        vendor.suspension_reason = reason
+    db.commit()
+    return {"message": "Status updated"}
+
+@router.post("/master-admin/{manager_id}/status")
+def update_manager_status(
+    manager_id: str,
+    status: str,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user)
+):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    manager = db.query(User).filter(User.id == manager_id, User.role == UserRole.MASTER_ADMIN).first()
+    if not manager:
+        raise HTTPException(status_code=404, detail="Manager not found")
+        
+    manager.is_active = (status == 'active')
+    db.commit()
+    return {"message": f"Manager status updated to {status}"}
+
+@router.delete("/master-admin/{manager_id}")
+def delete_manager(
+    manager_id: str,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user)
+):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    manager = db.query(User).filter(User.id == manager_id).first()
+    if not manager:
+        raise HTTPException(status_code=404, detail="Manager not found")
+    db.delete(manager)
+    db.commit()
+    return {"message": "Manager deleted"}
+
+@router.patch("/master-admin/{manager_id}")
+def edit_manager(
+    manager_id: str,
+    full_name: Optional[str] = Body(None),
+    email: Optional[str] = Body(None),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user)
+):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    manager = db.query(User).filter(User.id == manager_id).first()
+    if not manager:
+        raise HTTPException(status_code=404, detail="Manager not found")
+    if full_name: manager.full_name = full_name
+    if email: manager.email = email
+    db.commit()
+    return {"message": "Manager updated"}
+
+@router.post("/master-admin", response_model=dict)
+def create_manager(
+    *,
+    db: Session = Depends(deps.get_db),
+    manager_in: ManagerCreate
+):
+    if db.query(User).filter(User.email == manager_in.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+        
+    user = User(
+        email=manager_in.email,
+        username=manager_in.email,
+        full_name=manager_in.full_name,
+        hashed_password=get_password_hash(manager_in.password),
+        role=UserRole.MASTER_ADMIN,
+        vendor_id=manager_in.vendor_id,
+        is_active=True
+    )
+    db.add(user)
+    db.commit()
+    return {"message": "Manager created"}
+
+@router.get("/master-admin", response_model=List[dict])
+def list_managers(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user)
+):
+    query = db.query(User).filter(User.role == UserRole.MASTER_ADMIN)
+    if current_user.role != UserRole.SUPER_ADMIN:
         query = query.filter(User.vendor_id == current_user.vendor_id)
-        
-    admins = query.all()
-    return [{
-        "id": a.id,
-        "email": a.email,
-        "full_name": a.full_name,
-        "vendor_id": a.vendor_id,
-        "is_active": a.is_active
-    } for a in admins]
+    
+    users = query.all()
+    return [{"id": u.id, "email": u.email, "full_name": u.full_name, "vendor_id": u.vendor_id} for u in users]
 
-@router.get("/client")
-def get_clients(
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_master_level)
-):
-    query = db.query(Client)
-    if current_user.role in [RoleEnum.VENDOR_OWNER, RoleEnum.MASTER_ADMIN]:
-        query = query.filter(Client.vendor_id == current_user.vendor_id)
-        
-    clients = query.all()
-    return [{
-        "id": c.id,
-        "full_name": c.full_name,
-        "phone_number": c.phone_number,
-        "national_id": c.national_id,
-        "vendor_id": c.vendor_id,
-        "is_active": c.is_active
-    } for c in clients]
+@router.get("/me", response_model=dict)
+def get_current_user_profile(current_user: User = Depends(deps.get_current_active_user)):
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "role": current_user.role,
+        "vendor_id": current_user.vendor_id
+    }
 
-@router.get("/dashboard/stats")
+@router.get("/dashboard/stats", response_model=dict)
 def get_dashboard_stats(
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_master_level)
+    current_user: User = Depends(deps.get_current_active_user)
 ):
     vendor_query = db.query(Vendor)
     client_query = db.query(Client)
+    asset_query = db.query(Asset)
+    contract_query = db.query(FinancingContract)
     
-    if current_user.role in [RoleEnum.VENDOR_OWNER, RoleEnum.MASTER_ADMIN]:
-        client_query = client_query.filter(Client.vendor_id == current_user.vendor_id)
+    if current_user.role != UserRole.SUPER_ADMIN:
+        vendor_id = current_user.vendor_id
+        client_query = client_query.filter(Client.vendor_id == vendor_id)
+        asset_query = asset_query.filter(Asset.vendor_id == vendor_id)
+        contract_query = contract_query.join(Asset).filter(Asset.vendor_id == vendor_id)
+        
+    total_receivable = db.query(sql_func.sum(FinancingContract.remaining_balance)).select_from(contract_query.subquery()).scalar() or 0
     
-    admin_query = db.query(User).filter(User.role == RoleEnum.MASTER_ADMIN)
-    if current_user.role != RoleEnum.DEV_ADMIN:
-        admin_query = admin_query.filter(User.vendor_id == current_user.vendor_id)
+    # Financial Privacy for Super Admin (Dev Profile)
+    if current_user.role == UserRole.SUPER_ADMIN:
+        total_receivable = 0
 
     return {
-        "total_vendors": vendor_query.count() if current_user.role == RoleEnum.DEV_ADMIN else 1,
+        "total_vendors": vendor_query.count(),
         "total_clients": client_query.count(),
-        "total_admins": admin_query.count()
+        "total_assets": asset_query.count(),
+        "stock_assets": asset_query.filter(Asset.status == AssetStatus.STOCK).count(),
+        "managed_assets": asset_query.filter(Asset.status == AssetStatus.MANAGED).count(),
+        "assigned_assets": asset_query.filter(Asset.status == AssetStatus.ASSIGNED).count(),
+        "total_receivable": total_receivable
     }

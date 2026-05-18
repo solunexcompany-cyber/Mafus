@@ -16,6 +16,12 @@
   --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
+.role-client {
+  --primary: #10b981;
+  --primary-hover: #059669;
+  --primary-light: #ecfdf5;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -45,6 +51,58 @@ body {
   text-align: center;
 }
 
+.login-screen.mode-driver {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  --primary: #10b981;
+  --primary-hover: #059669;
+  --primary-light: #ecfdf5;
+}
+
+.login-subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-top: 8px;
+  margin-bottom: 24px;
+}
+
+.login-toggle-container {
+  display: flex;
+  background: #f1f5f9;
+  padding: 6px;
+  border-radius: 12px;
+  margin-bottom: 28px;
+  gap: 4px;
+}
+
+.login-toggle-container .toggle-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.login-toggle-container .toggle-btn.active {
+  background: white;
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.login-card h1 {
+  font-size: 2.2rem;
+  font-weight: 950;
+  color: var(--text-main);
+  letter-spacing: -1px;
+}
 /* Sidebar Styling */
 .sidebar {
   width: 280px;
@@ -295,3 +353,135 @@ input:focus { border-color: var(--primary); background: white; outline: none; bo
 
 .driver-thumb { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; }
 .scrollable { max-height: 70vh; overflow-y: auto; padding-right: 10px; }
+
+/* Driver Dashboard Specifics */
+.ownership-progress-container {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  margin-bottom: 30px;
+}
+.ownership-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+.ownership-header h3 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+.ownership-header .percentage {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--primary);
+}
+.progress-bar-bg {
+  width: 100%;
+  height: 16px;
+  background: #f1f5f9;
+  border-radius: 99px;
+  overflow: hidden;
+  position: relative;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #34d399 0%, var(--primary) 100%);
+  border-radius: 99px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ownership-footer {
+  margin-top: 15px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Print/Receipt Styled payments table */
+.receipt-badge {
+  background: #ecfdf5;
+  color: #065f46;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.badge-notification {
+  background: #f43f5e;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.4);
+}
+
+.badge-pending {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.badge-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.bank-detail-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 15px;
+}
+
+.bank-detail-header {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.bank-detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+.bank-detail-row:last-child {
+  border-bottom: none;
+}
+
+.receipt-preview-thumbnail {
+  width: 80px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.receipt-preview-thumbnail:hover {
+  transform: scale(1.1);
+}
+
+.rejection-reason-text {
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin-top: 6px;
+  font-style: italic;
+}

@@ -5,7 +5,8 @@ from app.api import deps
 from app.models.user import User, UserRole
 from app.models.vendor import Vendor, ServiceStatus
 from app.models.client import Client
-from app.models.asset import Asset, AssetStatus, FinancingContract
+from app.models.asset import Asset, AssetStatus, FinancingContract, ContractStatus
+from app.models.payment import Payment
 from app.core.security import get_password_hash
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional
@@ -260,6 +261,88 @@ def get_dashboard_stats(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user)
 ):
+    if current_user.role == UserRole.CLIENT:
+        # Find the client details
+        client = db.query(Client).filter(Client.id == current_user.client_id).first()
+        if not client:
+            raise HTTPException(status_code=404, detail="Driver record not found")
+        
+        # Find the active contract
+        contract = db.query(FinancingContract).filter(
+            FinancingContract.client_id == client.id,
+            FinancingContract.status == ContractStatus.ACTIVE
+        ).first()
+        
+        contract_data = None
+        asset_data = None
+        payments_data = []
+        
+        if contract:
+            total_paid = contract.total_value - contract.remaining_balance
+            ownership_pct = (total_paid / contract.total_value * 100) if contract.total_value else 0
+            
+            contract_data = {
+                "id": contract.id,
+                "total_value": contract.total_value,
+                "weekly_installment": contract.weekly_installment,
+                "remaining_balance": contract.remaining_balance,
+                "total_paid": total_paid,
+                "ownership_percentage": round(ownership_pct, 1),
+                "status": contract.status,
+                "payment_account_number": contract.payment_account_number,
+                "payment_bank_name": contract.payment_bank_name,
+                "payment_account_name": contract.payment_account_name
+            }
+            
+            # Find the linked asset details
+            asset = contract.asset
+            if asset:
+                asset_data = {
+                    "id": asset.id,
+                    "internal_id": asset.internal_id,
+                    "type": asset.model,
+                    "model": asset.model,
+                    "plate_number": asset.plate_number,
+                    "chassis_number": asset.chassis_number,
+                    "engine_number": asset.engine_number,
+                    "karota_number": asset.karota_number
+                }
+            
+            # Find the payments made
+            payments = db.query(Payment).filter(Payment.contract_id == contract.id).order_by(Payment.timestamp.desc()).all()
+            for p in payments:
+                collector = db.query(User).filter(User.id == p.collected_by_id).first()
+                payments_data.append({
+                    "id": p.id,
+                    "amount": p.amount,
+                    "payment_method": p.payment_method,
+                    "status": p.status,
+                    "sender_name": p.sender_name,
+                    "receipt_url": p.receipt_url,
+                    "rejection_reason": p.rejection_reason,
+                    "timestamp": p.timestamp.isoformat() if p.timestamp else None,
+                    "collected_by": collector.full_name if collector else "System Agent"
+                })
+                
+        return {
+            "driver_profile": {
+                "id": client.id,
+                "full_name": client.full_name,
+                "nickname": client.nickname,
+                "dob": client.dob,
+                "photo_url": client.photo_url,
+                "national_id": client.national_id,
+                "phone_number": client.phone_number,
+                "address": client.address,
+                "city_of_duty": client.city_of_duty,
+                "next_of_kin": client.next_of_kin,
+                "guarantor_info": client.guarantor_info
+            },
+            "contract": contract_data,
+            "asset": asset_data,
+            "payments": payments_data
+        }
+
     vendor_query = db.query(Vendor)
     client_query = db.query(Client)
     asset_query = db.query(Asset)

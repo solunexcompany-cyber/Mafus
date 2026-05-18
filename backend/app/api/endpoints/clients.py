@@ -5,6 +5,7 @@ from app.api import deps
 from app.models.user import User, UserRole
 from app.models.client import Client
 from pydantic import BaseModel
+from app.core.security import get_password_hash
 import shutil
 import os
 import uuid
@@ -36,6 +37,9 @@ def create_client(
     if db.query(Client).filter(Client.national_id == client_in.national_id).first():
         raise HTTPException(status_code=400, detail="Driver with this NIN already registered")
         
+    if db.query(User).filter(User.username == client_in.phone_number).first():
+        raise HTTPException(status_code=400, detail="Driver with this phone number already registered as a user")
+
     client = Client(
         **client_in.dict(),
         vendor_id=current_user.vendor_id,
@@ -44,6 +48,21 @@ def create_client(
     db.add(client)
     db.commit()
     db.refresh(client)
+
+    # Automatically provision a User login account for the driver
+    user = User(
+        email=f"{client_in.national_id}@mafos.com",
+        username=client_in.phone_number,
+        full_name=client_in.full_name,
+        hashed_password=get_password_hash(client_in.phone_number),
+        role=UserRole.CLIENT,
+        vendor_id=client.vendor_id,
+        client_id=client.id,
+        is_active=True
+    )
+    db.add(user)
+    db.commit()
+
     return {"message": "Driver registered successfully", "id": client.id}
 
 @router.post("/upload-photo")

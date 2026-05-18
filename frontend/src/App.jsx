@@ -6,6 +6,7 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('mafos_token'));
   const [user, setUser] = useState(null);
   const [currentTab, setCurrentTab] = useState('dashboard');
+  const [loginMode, setLoginMode] = useState('corporate');
 
   const [stats, setStats] = useState({});
   const [dataList, setDataList] = useState([]);
@@ -23,6 +24,11 @@ function App() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResult, setSearchResult] = useState(null);
+  const [pendingClaims, setPendingClaims] = useState([]);
+  const [expandedVendors, setExpandedVendors] = useState({});
+  const [expandedManagers, setExpandedManagers] = useState({});
+  const [expandedDrivers, setExpandedDrivers] = useState({});
+  const [ledgerArchives, setLedgerArchives] = useState([]);
 
   useEffect(() => {
     if (token) {
@@ -57,13 +63,30 @@ function App() {
 
   const fetchUser = async () => {
     const res = await fetchWithAuth('/users/me');
-    if (res && res.ok) setUser(await res.json());
+    if (res && res.ok) {
+      const u = await res.json();
+      setUser(u);
+      if (u.role === 'client') {
+        setCurrentTab('dashboard');
+      }
+    }
   };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      if (currentTab === 'dashboard') {
+      // Always fetch pending receipts for managers/vendors to hydrate sidebar badge
+      if (user && (user.role === 'master_admin' || user.role === 'vendor_owner')) {
+        const pRes = await fetchWithAuth('/payments/pending');
+        if (pRes && pRes.ok) {
+          setPendingClaims(await pRes.json());
+        }
+      }
+
+      if (user && user.role === 'client') {
+        const res = await fetchWithAuth('/users/dashboard/stats');
+        if (res) setStats(await res.json());
+      } else if (currentTab === 'dashboard') {
         const res = await fetchWithAuth('/users/dashboard/stats');
         if (res) setStats(await res.json());
       } else if (currentTab === 'search') {
@@ -76,9 +99,25 @@ function App() {
         else if (currentTab === 'assignments') endpoint = '/assignments/';
         else if (currentTab === 'collections') endpoint = '/payments/';
         else if (currentTab === 'clients') endpoint = '/clients/';
+        else if (currentTab === 'receipts') endpoint = '/payments/pending';
 
-        const res = await fetchWithAuth(endpoint);
-        if (res) setDataList(await res.json());
+        if (endpoint) {
+          const res = await fetchWithAuth(endpoint);
+          if (res) {
+            const data = await res.json();
+            setDataList(data);
+            if (currentTab === 'receipts') {
+              setPendingClaims(data);
+            }
+          }
+        }
+
+        if (currentTab === 'collections' && user.role === 'super_admin') {
+          const archRes = await fetchWithAuth('/payments/archives');
+          if (archRes && archRes.ok) {
+            setLedgerArchives(await archRes.json());
+          }
+        }
 
         if (currentTab === 'assets' && user.role === 'vendor_owner') {
           const mRes = await fetchWithAuth('/users/master-admin');
@@ -227,6 +266,176 @@ function App() {
     }
   };
 
+  const submitPaymentClaim = async (e) => {
+    e.preventDefault();
+    setUploading(true);
+    try {
+      const formData = new FormData(e.target);
+      formData.append('contract_id', stats.contract.id);
+      
+      const res = await fetchWithAuth('/payments/claim', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (res && res.ok) {
+        alert("Receipt Submitted Successfully! Awaiting Manager Verification.");
+        setShowModal(null);
+        fetchData();
+      } else {
+        const error = await res.json();
+        alert(`Failed to submit: ${error.detail || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setUploading(false);
+  };
+
+  const handleApproveClaim = async (paymentId) => {
+    if (!confirm("Are you sure you want to approve and confirm receipt of this money? This will credit the driver's balance immediately.")) return;
+    const res = await fetchWithAuth(`/payments/${paymentId}/approve`, { method: 'POST' });
+    if (res && res.ok) {
+      alert("Claim Approved! Driver balance credited.");
+      fetchData();
+    }
+  };
+
+  const handleRejectClaim = async (paymentId) => {
+    const reason = prompt("Enter the reason for rejecting this claim (e.g. 'Money not received', 'Incorrect amount'):");
+    if (!reason) return;
+    
+    const formData = new FormData();
+    formData.append('rejection_reason', reason);
+    
+    const res = await fetchWithAuth(`/payments/${paymentId}/reject`, {
+      method: 'POST',
+      body: formData
+    });
+    if (res && res.ok) {
+      alert("Claim Declined successfully.");
+      fetchData();
+    }
+  };
+
+  const handleCreateArchive = async () => {
+    if (!confirm("Are you sure you want to archive the current system payments ledger? This creates a secure backup downloadable at any time.")) return;
+    setUploading(true);
+    const res = await fetchWithAuth('/payments/archive', { method: 'POST' });
+    if (res && res.ok) {
+      alert("Ledger archived successfully!");
+      fetchData();
+    } else {
+      alert("Failed to create archive.");
+    }
+    setUploading(false);
+  };
+
+  const renderManagers = (managersTree) => {
+    return Object.keys(managersTree).map(mgr => {
+      const isMgrExpanded = !!expandedManagers[mgr];
+      const mgrTotal = Object.values(managersTree[mgr]).reduce((sum, drv) => 
+        sum + drv.reduce((a, p) => a + (Number(p.amount) || 0), 0)
+      , 0);
+
+      return (
+        <div key={mgr} style={{background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', marginTop: '10px'}}>
+          <div 
+            onClick={() => setExpandedManagers(prev => ({ ...prev, [mgr]: !prev[mgr] }))}
+            style={{padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: isMgrExpanded ? '#f8fafc' : 'transparent'}}
+          >
+            <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+              <span style={{fontSize: '1.1rem'}}>{isMgrExpanded ? '📂' : '📁'}</span>
+              <strong style={{fontSize: '0.95rem', color: '#334155'}}>{mgr}</strong>
+              <span style={{fontSize: '0.75rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '6px', fontWeight: '700', color: '#64748b'}}>Staff Manager</span>
+            </div>
+            <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+              <span style={{fontSize: '0.85rem', color: 'var(--text-muted)'}}>Drivers: <strong>{Object.keys(managersTree[mgr]).length}</strong></span>
+              <span style={{fontSize: '1rem', color: '#10b981', fontWeight: '800'}}>₦{mgrTotal.toLocaleString()}</span>
+            </div>
+          </div>
+
+          {isMgrExpanded && (
+            <div style={{padding: '10px 20px 15px 20px', display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px solid #f1f5f9'}}>
+              {renderDrivers(managersTree[mgr])}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
+  const renderDrivers = (driversTree) => {
+    return Object.keys(driversTree).map(drv => {
+      const isDrvExpanded = !!expandedDrivers[drv];
+      const drvTotal = driversTree[drv].reduce((a, p) => a + (Number(p.amount) || 0), 0);
+
+      return (
+        <div key={drv} style={{background: '#fafafa', borderRadius: '10px', border: '1px solid #f1f5f9', overflow: 'hidden', marginTop: '10px'}}>
+          <div 
+            onClick={() => setExpandedDrivers(prev => ({ ...prev, [drv]: !prev[drv] }))}
+            style={{padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: isDrvExpanded ? '#f8fafc' : 'transparent'}}
+          >
+            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <span style={{fontSize: '1rem'}}>{isDrvExpanded ? '👤' : '👥'}</span>
+              <strong style={{fontSize: '0.9rem', color: '#475569'}}>{drv}</strong>
+              <span style={{fontSize: '0.7rem', background: '#f0fdf4', padding: '2px 6px', borderRadius: '6px', fontWeight: '700', color: '#16a34a'}}>Active Driver</span>
+            </div>
+            <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+              <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Payments: <strong>{driversTree[drv].length}</strong></span>
+              <span style={{fontSize: '0.95rem', color: '#10b981', fontWeight: '800'}}>₦{drvTotal.toLocaleString()}</span>
+            </div>
+          </div>
+
+          {isDrvExpanded && (
+            <div style={{padding: '10px 18px', borderTop: '1px solid #f1f5f9', overflowX: 'auto'}}>
+              <table style={{width: '100%', fontSize: '0.85rem'}}>
+                <thead>
+                  <tr style={{background: '#f1f5f9'}}>
+                    <th>Reference</th>
+                    <th>Timestamp</th>
+                    <th>Payment Method</th>
+                    <th>Status</th>
+                    <th>Receipt Upload</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {driversTree[drv].map(p => (
+                    <tr key={p.id}>
+                      <td><strong style={{color: 'var(--text-muted)', fontSize: '0.75rem'}}>{p.id.substring(0,8).toUpperCase()}</strong></td>
+                      <td>{new Date(p.timestamp).toLocaleString()}</td>
+                      <td><span className="tag-badge" style={{background: '#e2e8f0', color: '#475569', textTransform: 'uppercase'}}>{p.payment_method}</span></td>
+                      <td>
+                        {p.status?.toLowerCase() === 'pending' ? (
+                          <span className="badge-pending">⏳ PENDING</span>
+                        ) : p.status?.toLowerCase() === 'rejected' ? (
+                          <span className="badge-rejected">❌ REJECTED</span>
+                        ) : (
+                          <span className="badge-pending" style={{background: '#d1fae5', color: '#065f46'}}>🟢 APPROVED</span>
+                        )}
+                      </td>
+                      <td>
+                        {p.receipt_url ? (
+                          <a href={`http://localhost:8195${p.receipt_url}`} target="_blank" rel="noreferrer">
+                            <img src={`http://localhost:8195${p.receipt_url}`} alt="Receipt" className="receipt-preview-thumbnail" style={{height: '35px', borderRadius: '5px'}} />
+                          </a>
+                        ) : (
+                          <span style={{color: 'var(--text-muted)', fontSize: '0.8rem'}}>No File</span>
+                        )}
+                      </td>
+                      <td><strong style={{color: '#10b981', fontSize: '1rem'}}>₦{p.amount.toLocaleString()}</strong></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
   const submitDeployment = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -239,6 +448,9 @@ function App() {
       karota_number: formData.get('karota_number'),
       total_value: parseFloat(formData.get('total_value')),
       weekly_installment: parseFloat(formData.get('weekly')),
+      payment_account_number: formData.get('payment_account_number'),
+      payment_bank_name: formData.get('payment_bank_name'),
+      payment_account_name: formData.get('payment_account_name'),
     };
     const res = await fetchWithAuth('/assignments/', { method: 'POST', body: JSON.stringify(data) });
     if (res && res.ok) {
@@ -249,13 +461,47 @@ function App() {
   };
 
   if (!token) return (
-    <div className="login-screen">
+    <div className={`login-screen mode-${loginMode}`}>
       <div className="login-card">
-        <h1>MAFOS Pro</h1>
+        <h1>{loginMode === 'corporate' ? "MAFOS Pro" : "MAFOS Driver"}</h1>
+        <p className="login-subtitle">
+          {loginMode === 'corporate' ? "Management & Admin Portal" : "Secure Tricycle Lease Registry"}
+        </p>
+
+        {/* Toggle Toggles */}
+        <div className="login-toggle-container">
+          <button 
+            type="button" 
+            className={`toggle-btn ${loginMode === 'corporate' ? 'active' : ''}`}
+            onClick={() => setLoginMode('corporate')}
+          >
+            🏢 Corporate Access
+          </button>
+          <button 
+            type="button" 
+            className={`toggle-btn ${loginMode === 'driver' ? 'active' : ''}`}
+            onClick={() => setLoginMode('driver')}
+          >
+            🛵 Driver Portal
+          </button>
+        </div>
+
         <form onSubmit={handleLogin}>
-          <input name="email" type="email" placeholder="Email" required />
-          <input name="password" type="password" placeholder="Password" required />
-          <button type="submit" className="btn-primary">Authorized Login</button>
+          <input 
+            name="email" 
+            type={loginMode === 'corporate' ? 'email' : 'text'} 
+            placeholder={loginMode === 'corporate' ? 'Email Address' : 'Registered Phone Number'} 
+            required 
+          />
+          <input 
+            name="password" 
+            type="password" 
+            placeholder={loginMode === 'corporate' ? 'Password' : 'Password (defaults to Phone Number)'} 
+            required 
+          />
+          <button type="submit" className="btn-primary">
+            {loginMode === 'corporate' ? 'Authorized Login' : 'Secure Driver Login'}
+          </button>
         </form>
       </div>
     </div>
@@ -266,6 +512,7 @@ function App() {
   const isSuperAdmin = user.role === 'super_admin';
   const isVendor = user.role === 'vendor_owner';
   const isManager = user.role === 'master_admin';
+  const isClient = user.role === 'client';
   const openVendorDetails = async (v) => {
     setLoading(true);
     const res = await fetchWithAuth(`/users/vendor/${v.id}/details`);
@@ -310,10 +557,20 @@ function App() {
     <div className={`dashboard-container role-${user.role}`}>
       <aside className="sidebar">
         <div className="sidebar-header">
-          {isSuperAdmin ? "MAFOS AUTHORITY" : isVendor ? "MAFOS BUSINESS" : "MAFOS TERMINAL"}
+          {isSuperAdmin ? "MAFOS AUTHORITY" : isVendor ? "MAFOS BUSINESS" : isClient ? "MAFOS DRIVER" : "MAFOS TERMINAL"}
         </div>
         <nav>
-          <button className={currentTab === 'dashboard' ? 'active' : ''} onClick={() => setCurrentTab('dashboard')}>📊 Dashboard</button>
+          {!isClient && (
+            <button className={currentTab === 'dashboard' ? 'active' : ''} onClick={() => setCurrentTab('dashboard')}>📊 Dashboard</button>
+          )}
+
+          {isClient && (
+            <>
+              <button className={currentTab === 'dashboard' ? 'active' : ''} onClick={() => setCurrentTab('dashboard')}>📊 My Overview</button>
+              <button className={currentTab === 'payments' ? 'active' : ''} onClick={() => setCurrentTab('payments')}>📜 Installment History</button>
+              <button className={currentTab === 'kyc' ? 'active' : ''} onClick={() => setCurrentTab('kyc')}>🪪 KYC Profile</button>
+            </>
+          )}
 
           {isSuperAdmin && (
             <>
@@ -321,6 +578,7 @@ function App() {
               <button className={currentTab === 'vendors' ? 'active' : ''} onClick={() => setCurrentTab('vendors')}>🏢 Manage Vendors</button>
               <button className={currentTab === 'assets' ? 'active' : ''} onClick={() => setCurrentTab('assets')}>🌍 Global Fleet</button>
               <button className={currentTab === 'assignments' ? 'active' : ''} onClick={() => setCurrentTab('assignments')}>📜 All Contracts</button>
+              <button className={currentTab === 'collections' ? 'active' : ''} onClick={() => setCurrentTab('collections')}>💰 Installments Ledger</button>
             </>
           )}
 
@@ -329,6 +587,17 @@ function App() {
               <button className={currentTab === 'managers' ? 'active' : ''} onClick={() => setCurrentTab('managers')}>👥 Staff Managers</button>
               <button className={currentTab === 'assets' ? 'active' : ''} onClick={() => setCurrentTab('assets')}>🚜 Asset Inventory</button>
               <button className={currentTab === 'clients' ? 'active' : ''} onClick={() => setCurrentTab('clients')}>🪪 Driver Registry</button>
+              <button className={currentTab === 'collections' ? 'active' : ''} onClick={() => setCurrentTab('collections')}>💰 Installments Ledger</button>
+              <button 
+                className={currentTab === 'receipts' ? 'active' : ''} 
+                onClick={() => setCurrentTab('receipts')}
+                style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}
+              >
+                <span>⏳ Receipt Claims</span>
+                {pendingClaims.length > 0 && (
+                  <span className="badge-notification">{pendingClaims.length}</span>
+                )}
+              </button>
             </>
           )}
 
@@ -337,6 +606,17 @@ function App() {
               <button className={currentTab === 'assets' ? 'active' : ''} onClick={() => setCurrentTab('assets')}>🛵 Pending Deployment</button>
               <button className={currentTab === 'clients' ? 'active' : ''} onClick={() => setCurrentTab('clients')}>🪪 Drivers List</button>
               <button className={currentTab === 'assignments' ? 'active' : ''} onClick={() => setCurrentTab('assignments')}>📜 Active Routes</button>
+              <button className={currentTab === 'collections' ? 'active' : ''} onClick={() => setCurrentTab('collections')}>💰 Installments Ledger</button>
+              <button 
+                className={currentTab === 'receipts' ? 'active' : ''} 
+                onClick={() => setCurrentTab('receipts')}
+                style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}
+              >
+                <span>⏳ Receipt Claims</span>
+                {pendingClaims.length > 0 && (
+                  <span className="badge-notification">{pendingClaims.length}</span>
+                )}
+              </button>
             </>
           )}
         </nav>
@@ -365,7 +645,12 @@ function App() {
       <main className="main-content">
         <header className="top-nav">
           <div className="nav-header">
-            <h2>{currentTab.replace('_', ' ').toUpperCase()}</h2>
+            <h2>
+              {isClient ? (
+                currentTab === 'dashboard' ? 'MY FINANCING DOSSIER' :
+                currentTab === 'payments' ? 'MY INSTALLMENT RECEIPTS' : 'MY VERIFIED KYC PROFILE'
+              ) : currentTab.replace('_', ' ').toUpperCase()}
+            </h2>
             {currentTab === 'clients' && <button className="btn-add-large" onClick={() => setShowModal('new_client')}>+ Register Driver</button>}
             {currentTab === 'vendors' && isSuperAdmin && <button className="btn-add-large" onClick={() => setShowModal('new_vendor')}>+ Setup New Vendor</button>}
             {currentTab === 'managers' && isVendor && <button className="btn-add-large" onClick={() => setShowModal('new_manager')}>+ Add New Manager</button>}
@@ -373,7 +658,7 @@ function App() {
           </div>
         </header>
 
-        {currentTab === 'dashboard' && (
+        {currentTab === 'dashboard' && !isClient && (
           <div className="overview-grid">
             <div className="hero-stats-row">
               {!isSuperAdmin ? (
@@ -420,6 +705,129 @@ function App() {
                   <p>{stats.total_vendors}</p>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {currentTab === 'dashboard' && isClient && (
+          <div className="overview-grid" style={{display: 'flex', flexDirection: 'column', gap: '30px'}}>
+            {/* Ownership progress gamification bar */}
+            <div className="ownership-progress-container">
+              <div className="ownership-header">
+                <h3>Tricycle Ownership Progress</h3>
+                <span className="percentage">
+                  {stats.contract ? `${stats.contract.ownership_percentage}%` : '0%'}
+                </span>
+              </div>
+              <div className="progress-bar-bg">
+                <div 
+                  className="progress-bar-fill" 
+                  style={{ width: stats.contract ? `${stats.contract.ownership_percentage}%` : '0%' }}
+                ></div>
+              </div>
+              <div className="ownership-footer">
+                <span>Total Value: ₦{stats.contract?.total_value?.toLocaleString() || 0}</span>
+                <span>Remaining: ₦{stats.contract?.remaining_balance?.toLocaleString() || 0}</span>
+              </div>
+            </div>
+
+            {stats.contract && (
+              <div className="bank-detail-card">
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
+                  <div>
+                    <h3 style={{fontSize: '1.2rem', fontWeight: '900', color: 'var(--text-main)', margin: 0}}>🏦 Make a Bank Transfer</h3>
+                    <p style={{fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px'}}>Pay your weekly installment directly to the account details below, then click Submit Receipt.</p>
+                  </div>
+                  <button 
+                    className="btn-primary animate-hover" 
+                    style={{
+                      background: '#10b981', 
+                      color: 'white', 
+                      padding: '12px 24px', 
+                      borderRadius: '12px', 
+                      fontWeight: '800', 
+                      border: 'none', 
+                      cursor: 'pointer', 
+                      boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                    onClick={() => setShowModal('submit_receipt')}
+                  >
+                    <span>🛵</span> Submit Transfer Receipt
+                  </button>
+                </div>
+                <div className="info-list" style={{marginTop: '20px'}}>
+                  <div className="bank-detail-row"><span>Bank Name:</span> <strong>{stats.contract.payment_bank_name || 'Unity Bank PLC (Default)'}</strong></div>
+                  <div className="bank-detail-row"><span>Account Number:</span> <strong style={{fontSize: '1.25rem', color: '#10b981', letterSpacing: '0.5px'}}>{stats.contract.payment_account_number || '1023485764'}</strong></div>
+                  <div className="bank-detail-row"><span>Account Name:</span> <strong>{stats.contract.payment_account_name || 'MAFOS Tricycle Logistics Ltd'}</strong></div>
+                </div>
+              </div>
+            )}
+
+            <div className="hero-stats-row">
+              <div className="receivable-card" style={{background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white'}}>
+                <h3 style={{color: '#a7f3d0'}}>Total Paid (Installments)</h3>
+                <div className="amount">₦{stats.contract?.total_paid?.toLocaleString() || 0}</div>
+                <div style={{marginTop: '12px', fontSize: '0.85rem', color: '#ecfdf5'}}>Keep up the good work!</div>
+              </div>
+
+              <div className="receivable-card" style={{background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: 'white'}}>
+                <h3 style={{color: '#fde68a'}}>Weekly Due Amount</h3>
+                <div className="amount">₦{stats.contract?.weekly_installment?.toLocaleString() || 0}</div>
+                <div style={{marginTop: '12px', fontSize: '0.85rem', color: '#fffbeb'}}>Due every Sunday evening</div>
+              </div>
+            </div>
+
+            <div className="intel-grid" style={{marginTop: '0px'}}>
+              {/* Profile Dossier card */}
+              <div className="intel-card">
+                <div className="intel-card-header">
+                  <h3>👤 Driver Credentials</h3>
+                </div>
+                <div className="intel-body">
+                  <div className="driver-hero">
+                    <div className="driver-photo-frame" style={{width: '120px', height: '120px'}}>
+                      {stats.driver_profile?.photo_url ? (
+                        <img src={`http://localhost:8195${stats.driver_profile.photo_url}`} alt="Driver" />
+                      ) : (
+                        <div className="no-photo">NO PHOTO</div>
+                      )}
+                    </div>
+                    <h4 style={{fontSize: '1.4rem', fontWeight: 900, marginTop: '10px'}}>{stats.driver_profile?.full_name}</h4>
+                    <p className="tag-badge" style={{marginTop: '8px', background: 'var(--primary-light)', color: 'var(--primary)'}}>
+                      {stats.driver_profile?.nickname || 'No Nickname'}
+                    </p>
+                  </div>
+                  <div className="info-list" style={{marginTop: '20px'}}>
+                    <div className="info-row"><span>NIN Number:</span> <strong>{stats.driver_profile?.national_id}</strong></div>
+                    <div className="info-row"><span>Primary Contact:</span> <strong>{stats.driver_profile?.phone_number}</strong></div>
+                    <div className="info-row"><span>City of Duty:</span> <strong>{stats.driver_profile?.city_of_duty}</strong></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tricycle Machine details card */}
+              <div className="intel-card">
+                <div className="intel-card-header">
+                  <h3>🛵 Assigned Machine Specs</h3>
+                </div>
+                <div className="intel-body">
+                  {stats.asset ? (
+                    <div className="info-list">
+                      <div className="info-row"><span>Internal ID:</span> <strong className="tag-badge" style={{background: 'var(--primary-light)', color: 'var(--primary)'}}>{stats.asset.internal_id}</strong></div>
+                      <div className="info-row"><span>Machine Model:</span> <strong>{stats.asset.model || 'Bajaj Napep'}</strong></div>
+                      <div className="info-row"><span>Plate Number:</span> <strong>{stats.asset.plate_number || 'N/A'}</strong></div>
+                      <div className="info-row"><span>KAROTA ID:</span> <strong>{stats.asset.karota_number || 'N/A'}</strong></div>
+                      <div className="info-row"><span>Engine Number:</span> <strong>{stats.asset.engine_number || 'N/A'}</strong></div>
+                      <div className="info-row"><span>Chassis Number:</span> <strong>{stats.asset.chassis_number || 'N/A'}</strong></div>
+                    </div>
+                  ) : (
+                    <div className="no-photo" style={{height: '200px'}}>NO ACTIVE MACHINE ASSIGNED</div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -523,7 +931,103 @@ function App() {
           </div>
         )}
 
-        {currentTab !== 'dashboard' && currentTab !== 'search' && !vendorDetails && (
+        {currentTab === 'payments' && isClient && (
+          <div className="data-view" style={{padding: '30px', background: 'white', borderRadius: '20px', boxShadow: 'var(--shadow)', border: '1px solid var(--border)'}}>
+            <h3 style={{fontSize: '1.2rem', fontWeight: 800, marginBottom: '20px', color: 'var(--text-main)'}}>Installment Payment Receipts Ledger</h3>
+            {stats.payments && stats.payments.length > 0 ? (
+              <table className="receipt-table">
+                <thead>
+                  <tr>
+                    <th>Receipt Reference</th>
+                    <th>Payment Date & Time</th>
+                    <th>Payment Method</th>
+                    <th>Amount Paid</th>
+                    <th>Collected By</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.payments.map((p, idx) => (
+                    <tr key={p.id} className="receipt-row">
+                      <td><strong style={{fontSize: '0.85rem', color: 'var(--text-muted)'}}>{p.id.substring(0, 8).toUpperCase()}</strong></td>
+                      <td>{p.timestamp ? new Date(p.timestamp).toLocaleString() : 'N/A'}</td>
+                      <td><span className="tag-badge" style={{background: '#f1f5f9', color: '#475569', textTransform: 'uppercase'}}>{p.payment_method}</span></td>
+                      <td><strong style={{color: 'var(--primary)', fontSize: '1.05rem'}}>₦{p.amount.toLocaleString()}</strong></td>
+                      <td>{p.collected_by}</td>
+                      <td>
+                        {p.status?.toLowerCase() === 'pending' ? (
+                          <span className="badge-pending">⏳ PENDING VERIFICATION</span>
+                        ) : p.status?.toLowerCase() === 'rejected' ? (
+                          <div style={{display: 'flex', flexDirection: 'column'}}>
+                            <span className="badge-rejected">❌ DECLINED</span>
+                            {p.rejection_reason && (
+                              <span className="rejection-reason-text">"{p.rejection_reason}"</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="receipt-badge">🟢 SUCCESS</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="no-photo" style={{height: '200px'}}>NO INSTALLMENT PAYMENTS RECORDED YET</div>
+            )}
+          </div>
+        )}
+
+        {currentTab === 'kyc' && isClient && (
+          <div className="overview-grid" style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px'}}>
+            <div className="intel-card">
+              <div className="intel-card-header">
+                <h3>📋 Verified Personal KYC Profile</h3>
+              </div>
+              <div className="intel-body">
+                <div className="info-list">
+                  <div className="info-row"><span>Full Legal Name:</span> <strong>{stats.driver_profile?.full_name}</strong></div>
+                  <div className="info-row"><span>Driver Nickname:</span> <strong>{stats.driver_profile?.nickname || 'N/A'}</strong></div>
+                  <div className="info-row"><span>Date of Birth:</span> <strong>{stats.driver_profile?.dob || 'N/A'}</strong></div>
+                  <div className="info-row"><span>National ID (NIN):</span> <strong>{stats.driver_profile?.national_id}</strong></div>
+                  <div className="info-row"><span>Phone Contact:</span> <strong>{stats.driver_profile?.phone_number}</strong></div>
+                  <div className="info-row"><span>Residential Address:</span> <strong style={{maxWidth: '220px', textAlign: 'right'}}>{stats.driver_profile?.address}</strong></div>
+                  <div className="info-row"><span>Duty City:</span> <strong>{stats.driver_profile?.city_of_duty}</strong></div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{display: 'flex', flexDirection: 'column', gap: '30px'}}>
+              <div className="intel-card">
+                <div className="intel-card-header">
+                  <h3>👥 Next of Kin Contact</h3>
+                </div>
+                <div className="intel-body">
+                  <div className="info-list">
+                    <div className="info-row"><span>Kin Name:</span> <strong>{stats.driver_profile?.next_of_kin?.name || 'N/A'}</strong></div>
+                    <div className="info-row"><span>Relationship:</span> <strong>{stats.driver_profile?.next_of_kin?.relation || 'N/A'}</strong></div>
+                    <div className="info-row"><span>Kin Phone:</span> <strong>{stats.driver_profile?.next_of_kin?.phone || 'N/A'}</strong></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="intel-card">
+                <div className="intel-card-header">
+                  <h3>🛡️ Verified Legal Guarantor</h3>
+                </div>
+                <div className="intel-body">
+                  <div className="info-list">
+                    <div className="info-row"><span>Guarantor Name:</span> <strong>{stats.driver_profile?.guarantor_info?.name || 'N/A'}</strong></div>
+                    <div className="info-row"><span>Guarantor Phone:</span> <strong>{stats.driver_profile?.guarantor_info?.phone || 'N/A'}</strong></div>
+                    <div className="info-row"><span>Residential Address:</span> <strong style={{maxWidth: '220px', textAlign: 'right'}}>{stats.driver_profile?.guarantor_info?.address || 'N/A'}</strong></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {currentTab !== 'dashboard' && currentTab !== 'search' && currentTab !== 'collections' && !isClient && !vendorDetails && (
           <div className="data-view">
             {currentTab === 'assets' && isSuperAdmin && fleetVendor && (
                 <div className="nav-header" style={{marginBottom: '20px'}}>
@@ -543,6 +1047,7 @@ function App() {
                       <><th>Internal ID</th><th>Type</th><th>Plate</th><th>Status</th><th>Action</th></>
                   )}
                   {currentTab === 'assignments' && <><th>Driver</th><th>Asset ID</th><th>Plate</th><th>Balance</th></>}
+                  {currentTab === 'receipts' && <><th>Date Claimed</th><th>Sender / Driver</th><th>Amount Paid</th><th>Receipt Upload</th><th>Actions</th></>}
                 </tr>
               </thead>
               <tbody>
@@ -618,12 +1123,184 @@ function App() {
                         <td className="balance-cell">₦{item.balance?.toLocaleString()}</td>
                       </>
                     )}
+                    {currentTab === 'receipts' && (
+                      <>
+                        <td>{item.timestamp ? new Date(item.timestamp).toLocaleString() : 'N/A'}</td>
+                        <td>
+                          <strong style={{color: 'var(--text-main)'}}>{item.sender_name}</strong>
+                          <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Contract: {item.contract_id?.substring(0,8).toUpperCase()}</div>
+                        </td>
+                        <td><strong style={{color: '#10b981', fontSize: '1.1rem'}}>₦{item.amount?.toLocaleString()}</strong></td>
+                        <td>
+                          {item.receipt_url ? (
+                            <a href={`http://localhost:8195${item.receipt_url}`} target="_blank" rel="noreferrer">
+                              <img src={`http://localhost:8195${item.receipt_url}`} alt="Receipt" className="receipt-preview-thumbnail" />
+                            </a>
+                          ) : (
+                            'No File'
+                          )}
+                        </td>
+                        <td>
+                          <button 
+                            className="btn-primary animate-hover" 
+                            style={{background: '#10b981', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '0.85rem'}}
+                            onClick={(e) => { e.stopPropagation(); handleApproveClaim(item.id); }}
+                          >
+                            Confirm & Credit
+                          </button>
+                          <button 
+                            className="btn-logout animate-hover" 
+                            style={{width: 'auto', padding: '8px 16px', marginLeft: '8px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '0.85rem'}}
+                            onClick={(e) => { e.stopPropagation(); handleRejectClaim(item.id); }}
+                          >
+                            Decline
+                          </button>
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
+        {currentTab === 'collections' && !isClient && (
+          <div className="collections-drilldown-container" style={{display: 'flex', flexDirection: 'column', gap: '30px', marginTop: '20px'}}>
+            
+            {/* Header with Developer Archive actions */}
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '25px 30px', borderRadius: '20px', boxShadow: 'var(--shadow)', border: '1px solid var(--border)'}}>
+              <div>
+                <h2 style={{fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)', margin: 0}}>💰 Interactive Installments Ledger</h2>
+                <p style={{fontSize: '0.9rem', color: 'var(--text-muted)', margin: '5px 0 0 0'}}>
+                  {isSuperAdmin ? "Global system audit across all active vendors, managers and driver routes." : 
+                   isVendor ? "Corporate balance audit for staff managers and registered driver fleets." :
+                   "Route installment ledgers for your registered active drivers."}
+                </p>
+              </div>
+
+              {isSuperAdmin && (
+                <button 
+                  className="btn-primary animate-hover" 
+                  style={{background: '#6366f1', display: 'flex', alignItems: 'center', gap: '8px', border: 'none', padding: '12px 24px', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', color: 'white'}}
+                  onClick={handleCreateArchive}
+                >
+                  📦 Archive System Ledger
+                </button>
+              )}
+            </div>
+
+            {/* Drilldown accordion view */}
+            <div style={{padding: '30px', background: 'white', borderRadius: '20px', boxShadow: 'var(--shadow)', border: '1px solid var(--border)'}}>
+              <h3 style={{fontSize: '1.1rem', fontWeight: 800, marginBottom: '20px', color: 'var(--text-main)', marginTop: 0}}>Lineage Drill-Down Explorer</h3>
+              
+              {dataList.length === 0 ? (
+                <div className="no-photo" style={{height: '150px'}}>NO PAYMENTS RECORDED YET IN THE SYSTEM</div>
+              ) : (
+                <div style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                  {(() => {
+                    const tree = {};
+                    dataList.forEach(p => {
+                      const vName = p.vendor_name || "Unknown Vendor";
+                      const mName = p.manager_name || "Self-Reported Claim (No Manager)";
+                      const dName = p.driver_name || "Unknown Driver";
+                      
+                      if (!tree[vName]) tree[vName] = {};
+                      if (!tree[vName][mName]) tree[vName][mName] = {};
+                      if (!tree[vName][mName][dName]) tree[vName][mName][dName] = [];
+                      
+                      tree[vName][mName][dName].push(p);
+                    });
+
+                    if (isSuperAdmin) {
+                      return Object.keys(tree).map(vendor => {
+                        const isVendExpanded = !!expandedVendors[vendor];
+                        const vendorTotal = Object.values(tree[vendor]).reduce((sum, mgr) => 
+                          sum + Object.values(mgr).reduce((s, drv) => s + drv.reduce((a, p) => a + (Number(p.amount) || 0), 0), 0)
+                        , 0);
+
+                        return (
+                          <div key={vendor} style={{background: '#f8fafc', borderRadius: '15px', border: '1px solid #e2e8f0', overflow: 'hidden', marginTop: '10px'}}>
+                            <div 
+                              onClick={() => setExpandedVendors(prev => ({ ...prev, [vendor]: !prev[vendor] }))}
+                              style={{padding: '18px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: isVendExpanded ? '#f1f5f9' : 'transparent', transition: 'background 0.2s'}}
+                            >
+                              <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                                <span style={{fontSize: '1.2rem'}}>{isVendExpanded ? '📂' : '📁'}</span>
+                                <strong style={{fontSize: '1.05rem', color: '#1e293b'}}>{vendor}</strong>
+                                <span style={{fontSize: '0.8rem', background: '#e2e8f0', padding: '3px 8px', borderRadius: '8px', fontWeight: '700', color: '#475569'}}>Vendor Owner</span>
+                              </div>
+                              <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+                                <span style={{fontSize: '0.95rem', color: 'var(--text-muted)'}}>Managers: <strong>{Object.keys(tree[vendor]).length}</strong></span>
+                                <span style={{fontSize: '1.1rem', color: '#10b981', fontWeight: '800'}}>₦{vendorTotal.toLocaleString()}</span>
+                              </div>
+                            </div>
+
+                            {isVendExpanded && (
+                              <div style={{padding: '10px 24px 20px 24px', display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #e2e8f0'}}>
+                                {renderManagers(tree[vendor])}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    }
+
+                    if (isVendor) {
+                      const myVendorBranch = Object.values(tree)[0] || {};
+                      return renderManagers(myVendorBranch);
+                    }
+
+                    if (isManager) {
+                      const myManagerDrivers = {};
+                      Object.values(tree).forEach(mgrs => {
+                        Object.keys(mgrs).forEach(mgr => {
+                          if (mgr.toLowerCase().includes(user.full_name.toLowerCase()) || Object.keys(mgrs).length === 1) {
+                            Object.assign(myManagerDrivers, mgrs[mgr]);
+                          }
+                        });
+                      });
+                      return renderDrivers(myManagerDrivers);
+                    }
+                  })()}
+                </div>
+              )}
+            </div>
+
+            {/* Developer Archiving Ledger packages list */}
+            {isSuperAdmin && (
+              <div style={{padding: '30px', background: 'white', borderRadius: '20px', boxShadow: 'var(--shadow)', border: '1px solid var(--border)'}}>
+                <h3 style={{fontSize: '1.1rem', fontWeight: 800, marginBottom: '20px', color: 'var(--text-main)', marginTop: 0}}>📦 Archived Ledger Packages</h3>
+                {ledgerArchives.length === 0 ? (
+                  <div className="no-photo" style={{height: '100px'}}>NO LEDGER ARCHIVES CREATED YET</div>
+                ) : (
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                    {ledgerArchives.map(arch => (
+                      <div key={arch.filename} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '15px 24px', borderRadius: '12px', border: '1px solid #e2e8f0'}}>
+                        <div>
+                          <strong style={{color: '#1e293b', fontSize: '0.95rem'}}>{arch.filename}</strong>
+                          <div style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px'}}>
+                            Saved: {new Date(arch.created_at).toLocaleString()} | Size: {(arch.size_bytes / 1024).toFixed(2)} KB
+                          </div>
+                        </div>
+                        <a 
+                          href={`http://localhost:8195/api/v1/payments/archives/${arch.filename}`} 
+                          download
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-primary animate-hover" 
+                          style={{background: '#10b981', display: 'inline-block', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', color: 'white', fontSize: '0.85rem', textDecoration: 'none'}}
+                        >
+                          ⬇️ Download Package
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
 
         {currentTab === 'vendors' && vendorDetails && (
           <div className="vendor-control-panel" style={{marginTop: '40px'}}>
@@ -845,8 +1522,68 @@ function App() {
                         <input name="engine_number" placeholder="Engine Number" required />
                     </div>
                 </div>
-                <div className="modal-actions">
+                <div className="form-row" style={{marginTop: '15px'}}>
+                    <div className="form-section" style={{flex: 1}}>
+                        <h4>Bank Account Details (For Driver Transfer Payments)</h4>
+                        <div style={{display: 'flex', gap: '12px'}}>
+                            <input name="payment_bank_name" placeholder="Bank Name (e.g. Access Bank)" required style={{flex: 1}} />
+                            <input name="payment_account_number" placeholder="Account Number" required style={{flex: 1}} />
+                        </div>
+                        <input name="payment_account_name" placeholder="Account Name (e.g. Solunex Enterprise)" required style={{marginTop: '12px'}} />
+                    </div>
+                </div>
+                <div className="modal-actions" style={{marginTop: '20px'}}>
                   <button type="submit" className="btn-primary">Activate Deployment</button>
+                  <button type="button" className="btn-cancel" onClick={() => setShowModal(null)}>Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showModal === 'submit_receipt' && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h3>Submit Bank Transfer Receipt</h3>
+              <p style={{fontSize: '0.85rem', color: 'var(--text-muted)'}}>Upload a screenshot or photo of your payment receipt.</p>
+              <form onSubmit={submitPaymentClaim} style={{ marginTop: '20px' }} className="deployment-form">
+                <div className="form-section">
+                  <label style={{fontWeight: '800', fontSize: '0.85rem', color: 'var(--text-muted)'}}>Amount Paid (₦)</label>
+                  <input 
+                    name="amount" 
+                    type="number" 
+                    placeholder="e.g. 15000" 
+                    required 
+                    defaultValue={stats.contract?.weekly_installment || ''}
+                    style={{marginTop: '4px'}}
+                  />
+                  
+                  <label style={{fontWeight: '800', fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginTop: '12px'}}>Sender Account Holder Name</label>
+                  <input name="sender_name" placeholder="e.g. Abubakar Shuaibu" required style={{marginTop: '4px'}} />
+                  
+                  <label style={{fontWeight: '800', fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginTop: '12px'}}>Upload Screenshot (PNG/JPG)</label>
+                  <input 
+                    name="file" 
+                    type="file" 
+                    accept="image/*" 
+                    required 
+                    style={{
+                      marginTop: '4px',
+                      padding: '12px',
+                      border: '2px dashed var(--border)',
+                      borderRadius: '8px',
+                      background: '#f8fafc',
+                      cursor: 'pointer',
+                      width: '100%',
+                      boxSizing: 'border-box'
+                    }} 
+                  />
+                </div>
+                
+                <div className="modal-actions" style={{marginTop: '24px'}}>
+                  <button type="submit" className="btn-primary" disabled={uploading} style={{background: '#10b981'}}>
+                    {uploading ? "Uploading Claim..." : "Submit Receipt Claim"}
+                  </button>
                   <button type="button" className="btn-cancel" onClick={() => setShowModal(null)}>Cancel</button>
                 </div>
               </form>

@@ -33,6 +33,11 @@ class AssignmentCreate(AssignmentBase):
     engine_number: str
     karota_number: str
     address: Optional[str] = None
+    
+    # Destination bank account details
+    payment_account_number: Optional[str] = None
+    payment_bank_name: Optional[str] = None
+    payment_account_name: Optional[str] = None
 
 class AssignmentResponse(AssignmentBase):
     id: str

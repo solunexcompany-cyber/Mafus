@@ -54,7 +54,10 @@ def create_contract(
         total_value=contract_in.total_value,
         weekly_installment=contract_in.weekly_installment,
         remaining_balance=contract_in.total_value,
-        status=ContractStatus.ACTIVE
+        status=ContractStatus.ACTIVE,
+        payment_account_number=contract_in.payment_account_number,
+        payment_bank_name=contract_in.payment_bank_name,
+        payment_account_name=contract_in.payment_account_name
     )
     
     db.add(contract)

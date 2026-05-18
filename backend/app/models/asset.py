@@ -52,6 +52,12 @@ class FinancingContract(Base):
     weekly_installment = Column(Float) 
     remaining_balance = Column(Float)
     status = Column(Enum(ContractStatus), default=ContractStatus.ACTIVE)
+    
+    # Destination Bank Details for driver payments
+    payment_account_number = Column(String, nullable=True)
+    payment_bank_name = Column(String, nullable=True)
+    payment_account_name = Column(String, nullable=True)
+    
     created_at = Column(DateTime, server_default=func.now())
     
     client = relationship("Client", back_populates="contracts")

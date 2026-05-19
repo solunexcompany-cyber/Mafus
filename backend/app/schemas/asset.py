@@ -4,7 +4,6 @@ from datetime import datetime
 
 class AssetBase(BaseModel):
     model: Optional[str] = None
-    chassis_number: Optional[str] = None
     engine_number: Optional[str] = None
     plate_number: Optional[str] = None
 
@@ -27,11 +26,9 @@ class AssignmentBase(BaseModel):
     weekly_installment: float
 
 class AssignmentCreate(AssignmentBase):
-    # Technical details to be filled by Manager during assignment
     plate_number: str
-    chassis_number: str
-    engine_number: str
     karota_number: str
+    engine_number: Optional[str] = None
     address: Optional[str] = None
     
     # Destination bank account details

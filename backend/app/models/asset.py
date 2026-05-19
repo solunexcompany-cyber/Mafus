@@ -29,7 +29,6 @@ class Asset(Base):
     internal_id = Column(String, unique=True, index=True)
     
     # Technical IDs (Initially N/A)
-    chassis_number = Column(String, unique=True, index=True, nullable=True)
     engine_number = Column(String, unique=True, nullable=True)
     plate_number = Column(String, unique=True, nullable=True)
     karota_number = Column(String, unique=True, nullable=True)

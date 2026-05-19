@@ -6,7 +6,8 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('mafos_token'));
   const [user, setUser] = useState(null);
   const [currentTab, setCurrentTab] = useState('dashboard');
-  const [loginMode, setLoginMode] = useState('corporate');
+  const [loginMode, setLoginMode] = useState('driver');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [stats, setStats] = useState({});
   const [dataList, setDataList] = useState([]);
@@ -443,9 +444,8 @@ function App() {
       client_id: formData.get('client_id'),
       asset_id: selectedItem.id,
       plate_number: formData.get('plate_number'),
-      chassis_number: formData.get('chassis_number'),
-      engine_number: formData.get('engine_number'),
       karota_number: formData.get('karota_number'),
+      engine_number: formData.get('engine_number') || null,
       total_value: parseFloat(formData.get('total_value')),
       weekly_installment: parseFloat(formData.get('weekly')),
       payment_account_number: formData.get('payment_account_number'),
@@ -462,47 +462,73 @@ function App() {
 
   if (!token) return (
     <div className={`login-screen mode-${loginMode}`}>
-      <div className="login-card">
-        <h1>{loginMode === 'corporate' ? "MAFOS Pro" : "MAFOS Driver"}</h1>
-        <p className="login-subtitle">
-          {loginMode === 'corporate' ? "Management & Admin Portal" : "Secure Tricycle Lease Registry"}
-        </p>
-
-        {/* Toggle Toggles */}
-        <div className="login-toggle-container">
-          <button 
-            type="button" 
-            className={`toggle-btn ${loginMode === 'corporate' ? 'active' : ''}`}
-            onClick={() => setLoginMode('corporate')}
-          >
-            🏢 Corporate Access
-          </button>
-          <button 
-            type="button" 
-            className={`toggle-btn ${loginMode === 'driver' ? 'active' : ''}`}
-            onClick={() => setLoginMode('driver')}
-          >
-            🛵 Driver Portal
-          </button>
+      <div className="login-layout">
+        
+        {/* Left Side: Branding & Image */}
+        <div className="login-hero">
+          <div className="hero-content">
+            <div className="brand-badge">POWERED BY SOLUNEX</div>
+            <h1 className="hero-title">Welcome to MAFOS</h1>
+            <p className="hero-description">
+              The premier platform for tricycle lease management, financing, and operational monitoring.
+            </p>
+          </div>
+          <div className="hero-image-container">
+            <img src="/keke_hero.png" alt="Keke Napep Fleet" className="hero-image" />
+          </div>
+          <div className="hero-footer">
+            Developed by Solunex Company &copy; {new Date().getFullYear()}
+          </div>
         </div>
 
-        <form onSubmit={handleLogin}>
-          <input 
-            name="email" 
-            type={loginMode === 'corporate' ? 'email' : 'text'} 
-            placeholder={loginMode === 'corporate' ? 'Email Address' : 'Registered Phone Number'} 
-            required 
-          />
-          <input 
-            name="password" 
-            type="password" 
-            placeholder={loginMode === 'corporate' ? 'Password' : 'Password (defaults to Phone Number)'} 
-            required 
-          />
-          <button type="submit" className="btn-primary">
-            {loginMode === 'corporate' ? 'Authorized Login' : 'Secure Driver Login'}
-          </button>
-        </form>
+        {/* Right Side: Login Form */}
+        <div className="login-form-container">
+          <div className="login-card">
+            <h1>{loginMode === 'corporate' ? "MAFOS Pro" : "MAFOS Driver"}</h1>
+            <p className="login-subtitle">
+              {loginMode === 'corporate' ? "Management & Admin Portal" : "Secure Tricycle Lease Registry"}
+            </p>
+
+            {/* Toggle Toggles */}
+            <div className="login-toggle-container">
+              <button 
+                type="button" 
+                className={`toggle-btn ${loginMode === 'driver' ? 'active' : ''}`}
+                onClick={() => setLoginMode('driver')}
+              >
+                <span className="toggle-icon">🛺</span>
+                <span className="toggle-text">Driver Login</span>
+              </button>
+              <button 
+                type="button" 
+                className={`toggle-btn ${loginMode === 'corporate' ? 'active' : ''}`}
+                onClick={() => setLoginMode('corporate')}
+              >
+                <span className="toggle-icon">🏢</span>
+                <span className="toggle-text">Admin Login</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleLogin}>
+              <input 
+                name="email" 
+                type={loginMode === 'corporate' ? 'email' : 'text'} 
+                placeholder={loginMode === 'corporate' ? 'Email Address' : 'Registered Phone Number'} 
+                required 
+              />
+              <input 
+                name="password" 
+                type="password" 
+                placeholder={loginMode === 'corporate' ? 'Password' : 'Password (defaults to Phone Number)'} 
+                required 
+              />
+              <button type="submit" className="btn-primary" style={{width: '100%', padding: '16px', fontSize: '1.05rem', marginTop: '10px'}}>
+                {loginMode === 'corporate' ? 'Authorized Login' : 'Secure Driver Login'}
+              </button>
+            </form>
+          </div>
+        </div>
+        
       </div>
     </div>
   );
@@ -553,44 +579,56 @@ function App() {
     }
     setLoading(false);
   };
+  const switchTab = (tab) => {
+    setCurrentTab(tab);
+    setIsSidebarOpen(false);
+  };
+
   return (
     <div className={`dashboard-container role-${user.role}`}>
-      <aside className="sidebar">
+      <div className="mobile-header">
+        <button className="menu-btn" onClick={() => setIsSidebarOpen(true)}>☰</button>
+        <div className="mobile-title">{isSuperAdmin ? "MAFOS AUTHORITY" : isVendor ? "MAFOS BUSINESS" : isClient ? "MAFOS DRIVER" : "MAFOS TERMINAL"}</div>
+      </div>
+      
+      {isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
+      
+      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           {isSuperAdmin ? "MAFOS AUTHORITY" : isVendor ? "MAFOS BUSINESS" : isClient ? "MAFOS DRIVER" : "MAFOS TERMINAL"}
         </div>
         <nav>
           {!isClient && (
-            <button className={currentTab === 'dashboard' ? 'active' : ''} onClick={() => setCurrentTab('dashboard')}>📊 Dashboard</button>
+            <button className={currentTab === 'dashboard' ? 'active' : ''} onClick={() => switchTab('dashboard')}>📊 Dashboard</button>
           )}
 
           {isClient && (
             <>
-              <button className={currentTab === 'dashboard' ? 'active' : ''} onClick={() => setCurrentTab('dashboard')}>📊 My Overview</button>
-              <button className={currentTab === 'payments' ? 'active' : ''} onClick={() => setCurrentTab('payments')}>📜 Installment History</button>
-              <button className={currentTab === 'kyc' ? 'active' : ''} onClick={() => setCurrentTab('kyc')}>🪪 KYC Profile</button>
+              <button className={currentTab === 'dashboard' ? 'active' : ''} onClick={() => switchTab('dashboard')}>📊 My Overview</button>
+              <button className={currentTab === 'payments' ? 'active' : ''} onClick={() => switchTab('payments')}>📜 Installment History</button>
+              <button className={currentTab === 'kyc' ? 'active' : ''} onClick={() => switchTab('kyc')}>🪪 KYC Profile</button>
             </>
           )}
 
           {isSuperAdmin && (
             <>
-              <button className={currentTab === 'search' ? 'active' : ''} onClick={() => setCurrentTab('search')}>🔍 Global Search</button>
-              <button className={currentTab === 'vendors' ? 'active' : ''} onClick={() => setCurrentTab('vendors')}>🏢 Manage Vendors</button>
-              <button className={currentTab === 'assets' ? 'active' : ''} onClick={() => setCurrentTab('assets')}>🌍 Global Fleet</button>
-              <button className={currentTab === 'assignments' ? 'active' : ''} onClick={() => setCurrentTab('assignments')}>📜 All Contracts</button>
-              <button className={currentTab === 'collections' ? 'active' : ''} onClick={() => setCurrentTab('collections')}>💰 Installments Ledger</button>
+              <button className={currentTab === 'search' ? 'active' : ''} onClick={() => switchTab('search')}>🔍 Global Search</button>
+              <button className={currentTab === 'vendors' ? 'active' : ''} onClick={() => switchTab('vendors')}>🏢 Manage Vendors</button>
+              <button className={currentTab === 'assets' ? 'active' : ''} onClick={() => switchTab('assets')}>🌍 Global Fleet</button>
+              <button className={currentTab === 'assignments' ? 'active' : ''} onClick={() => switchTab('assignments')}>📜 All Contracts</button>
+              <button className={currentTab === 'collections' ? 'active' : ''} onClick={() => switchTab('collections')}>💰 Installments Ledger</button>
             </>
           )}
 
           {isVendor && (
             <>
-              <button className={currentTab === 'managers' ? 'active' : ''} onClick={() => setCurrentTab('managers')}>👥 Staff Managers</button>
-              <button className={currentTab === 'assets' ? 'active' : ''} onClick={() => setCurrentTab('assets')}>🚜 Asset Inventory</button>
-              <button className={currentTab === 'clients' ? 'active' : ''} onClick={() => setCurrentTab('clients')}>🪪 Driver Registry</button>
-              <button className={currentTab === 'collections' ? 'active' : ''} onClick={() => setCurrentTab('collections')}>💰 Installments Ledger</button>
+              <button className={currentTab === 'managers' ? 'active' : ''} onClick={() => switchTab('managers')}>👥 Staff Managers</button>
+              <button className={currentTab === 'assets' ? 'active' : ''} onClick={() => switchTab('assets')}>🚜 Asset Inventory</button>
+              <button className={currentTab === 'clients' ? 'active' : ''} onClick={() => switchTab('clients')}>🪪 Driver Registry</button>
+              <button className={currentTab === 'collections' ? 'active' : ''} onClick={() => switchTab('collections')}>💰 Installments Ledger</button>
               <button 
                 className={currentTab === 'receipts' ? 'active' : ''} 
-                onClick={() => setCurrentTab('receipts')}
+                onClick={() => switchTab('receipts')}
                 style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}
               >
                 <span>⏳ Receipt Claims</span>
@@ -603,13 +641,13 @@ function App() {
 
           {isManager && (
             <>
-              <button className={currentTab === 'assets' ? 'active' : ''} onClick={() => setCurrentTab('assets')}>🛵 Pending Deployment</button>
-              <button className={currentTab === 'clients' ? 'active' : ''} onClick={() => setCurrentTab('clients')}>🪪 Drivers List</button>
-              <button className={currentTab === 'assignments' ? 'active' : ''} onClick={() => setCurrentTab('assignments')}>📜 Active Routes</button>
-              <button className={currentTab === 'collections' ? 'active' : ''} onClick={() => setCurrentTab('collections')}>💰 Installments Ledger</button>
+              <button className={currentTab === 'assets' ? 'active' : ''} onClick={() => switchTab('assets')}>🛵 Pending Deployment</button>
+              <button className={currentTab === 'clients' ? 'active' : ''} onClick={() => switchTab('clients')}>🪪 Drivers List</button>
+              <button className={currentTab === 'assignments' ? 'active' : ''} onClick={() => switchTab('assignments')}>📜 Active Routes</button>
+              <button className={currentTab === 'collections' ? 'active' : ''} onClick={() => switchTab('collections')}>💰 Installments Ledger</button>
               <button 
                 className={currentTab === 'receipts' ? 'active' : ''} 
-                onClick={() => setCurrentTab('receipts')}
+                onClick={() => switchTab('receipts')}
                 style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}
               >
                 <span>⏳ Receipt Claims</span>
@@ -619,6 +657,8 @@ function App() {
               </button>
             </>
           )}
+
+          <button className={currentTab === 'tracking' ? 'active tracking-btn' : 'tracking-btn'} onClick={() => switchTab('tracking')}>📍 Fleet Tracking</button>
         </nav>
         <div className="sidebar-footer">
           {isSuperAdmin ? (
@@ -662,9 +702,21 @@ function App() {
           <div className="overview-grid">
             <div className="hero-stats-row">
               {!isSuperAdmin ? (
-                <div className="receivable-card">
-                  <h3>{isVendor ? "Company Receivable" : "Platform Receivable"}</h3>
-                  <div className="amount">₦{stats.total_receivable?.toLocaleString()}</div>
+                <div className="receivable-card" style={{display: 'flex', flexDirection: 'column', gap: '20px', padding: '24px'}}>
+                  <div>
+                    <h3 style={{fontSize: '0.9rem', color: '#e2e8f0', textTransform: 'uppercase'}}>{isVendor ? "Total Expected Value" : "Total Fleet Value"}</h3>
+                    <div className="amount" style={{fontSize: '2rem'}}>₦{stats.total_asset_value?.toLocaleString()}</div>
+                  </div>
+                  <div style={{display: 'flex', gap: '30px', borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '15px'}}>
+                    <div>
+                      <h4 style={{fontSize: '0.75rem', color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '4px', marginTop: 0}}>Total Paid</h4>
+                      <div style={{fontSize: '1.4rem', fontWeight: '800', color: '#86efac'}}>₦{stats.total_paid?.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <h4 style={{fontSize: '0.75rem', color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '4px', marginTop: 0}}>Remaining Balance</h4>
+                      <div style={{fontSize: '1.4rem', fontWeight: '800', color: '#fca5a5'}}>₦{stats.total_receivable?.toLocaleString()}</div>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="receivable-card" style={{background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: 'white'}}>
@@ -705,6 +757,49 @@ function App() {
                   <p>{stats.total_vendors}</p>
                 </div>
               )}
+            </div>
+
+            <div className="quick-actions-section">
+              <h3 className="section-title">⚡ Quick Actions</h3>
+              <div className="quick-actions-grid">
+                {isSuperAdmin && (
+                  <>
+                    <button className="action-widget" onClick={() => switchTab('vendors')}><span className="icon">🏢</span><span className="text">Manage Vendors</span></button>
+                    <button className="action-widget" onClick={() => switchTab('assets')}><span className="icon">🌍</span><span className="text">Global Fleet</span></button>
+                    <button className="action-widget" onClick={() => switchTab('assignments')}><span className="icon">📜</span><span className="text">All Contracts</span></button>
+                    <button className="action-widget" onClick={() => switchTab('collections')}><span className="icon">💰</span><span className="text">Installments Ledger</span></button>
+                    <button className="action-widget tracking-widget" onClick={() => switchTab('tracking')}><span className="icon">📍</span><span className="text">Fleet Tracking</span></button>
+                  </>
+                )}
+                {isVendor && (
+                  <>
+                    <button className="action-widget" onClick={() => switchTab('managers')}><span className="icon">👥</span><span className="text">Staff Managers</span></button>
+                    <button className="action-widget" onClick={() => switchTab('assets')}><span className="icon">🚜</span><span className="text">Asset Inventory</span></button>
+                    <button className="action-widget" onClick={() => switchTab('clients')}><span className="icon">🪪</span><span className="text">Driver Registry</span></button>
+                    <button className="action-widget" onClick={() => switchTab('collections')}><span className="icon">💰</span><span className="text">Installments Ledger</span></button>
+                    <button className="action-widget" onClick={() => switchTab('receipts')}>
+                      <span className="icon">⏳</span>
+                      <span className="text">Receipt Claims</span>
+                      {pendingClaims.length > 0 && <span className="action-badge">{pendingClaims.length}</span>}
+                    </button>
+                    <button className="action-widget tracking-widget" onClick={() => switchTab('tracking')}><span className="icon">📍</span><span className="text">Fleet Tracking</span></button>
+                  </>
+                )}
+                {isManager && (
+                  <>
+                    <button className="action-widget" onClick={() => switchTab('assets')}><span className="icon">🛵</span><span className="text">Pending Deployment</span></button>
+                    <button className="action-widget" onClick={() => switchTab('clients')}><span className="icon">🪪</span><span className="text">Drivers List</span></button>
+                    <button className="action-widget" onClick={() => switchTab('assignments')}><span className="icon">📜</span><span className="text">Active Routes</span></button>
+                    <button className="action-widget" onClick={() => switchTab('collections')}><span className="icon">💰</span><span className="text">Installments Ledger</span></button>
+                    <button className="action-widget" onClick={() => switchTab('receipts')}>
+                      <span className="icon">⏳</span>
+                      <span className="text">Receipt Claims</span>
+                      {pendingClaims.length > 0 && <span className="action-badge">{pendingClaims.length}</span>}
+                    </button>
+                    <button className="action-widget tracking-widget" onClick={() => switchTab('tracking')}><span className="icon">📍</span><span className="text">Fleet Tracking</span></button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -811,17 +906,15 @@ function App() {
               {/* Tricycle Machine details card */}
               <div className="intel-card">
                 <div className="intel-card-header">
-                  <h3>🛵 Assigned Machine Specs</h3>
+                  <h3>🚜 Assigned Machine</h3>
                 </div>
                 <div className="intel-body">
                   {stats.asset ? (
                     <div className="info-list">
-                      <div className="info-row"><span>Internal ID:</span> <strong className="tag-badge" style={{background: 'var(--primary-light)', color: 'var(--primary)'}}>{stats.asset.internal_id}</strong></div>
-                      <div className="info-row"><span>Machine Model:</span> <strong>{stats.asset.model || 'Bajaj Napep'}</strong></div>
+                      <div className="info-row"><span>Type:</span> <strong>{stats.asset.type}</strong></div>
                       <div className="info-row"><span>Plate Number:</span> <strong>{stats.asset.plate_number || 'N/A'}</strong></div>
                       <div className="info-row"><span>KAROTA ID:</span> <strong>{stats.asset.karota_number || 'N/A'}</strong></div>
                       <div className="info-row"><span>Engine Number:</span> <strong>{stats.asset.engine_number || 'N/A'}</strong></div>
-                      <div className="info-row"><span>Chassis Number:</span> <strong>{stats.asset.chassis_number || 'N/A'}</strong></div>
                     </div>
                   ) : (
                     <div className="no-photo" style={{height: '200px'}}>NO ACTIVE MACHINE ASSIGNED</div>
@@ -829,8 +922,34 @@ function App() {
                 </div>
               </div>
             </div>
+
+            <div className="quick-actions-section" style={{marginTop: '20px'}}>
+              <h3 className="section-title">⚡ Quick Actions</h3>
+              <div className="quick-actions-grid">
+                <button className="action-widget" onClick={() => switchTab('payments')}><span className="icon">📜</span><span className="text">Installment History</span></button>
+                <button className="action-widget" onClick={() => switchTab('kyc')}><span className="icon">🪪</span><span className="text">KYC Profile</span></button>
+                <button className="action-widget tracking-widget" onClick={() => switchTab('tracking')}><span className="icon">📍</span><span className="text">Fleet Tracking</span></button>
+              </div>
+            </div>
+
           </div>
         )}
+
+        {currentTab === 'tracking' && (
+          <div className="coming-soon-container">
+            <div className="radar-animation">
+              <div className="radar-sweep"></div>
+              <div className="radar-blip"></div>
+              <div className="radar-blip b2"></div>
+            </div>
+            <h2 style={{fontSize: '2.5rem', fontWeight: '900', color: 'var(--text-main)', marginTop: '30px'}}>📍 Fleet Tracking</h2>
+            <div className="badge-notification" style={{display: 'inline-block', marginTop: '10px', padding: '8px 16px', fontSize: '1rem'}}>Module Coming Soon</div>
+            <p style={{color: 'var(--text-muted)', fontSize: '1.2rem', maxWidth: '500px', margin: '20px auto 0'}}>
+              Real-time GPS telemetry, geofencing, and historical route tracking are currently under development. Stay tuned for the next major MAFOS update!
+            </p>
+          </div>
+        )}
+
 
         {currentTab === 'search' && (
           <div className="search-view">
@@ -1518,8 +1637,7 @@ function App() {
                         <h4>Technical Specs</h4>
                         <input name="plate_number" placeholder="Plate Number" required />
                         <input name="karota_number" placeholder="KAROTA Number" required />
-                        <input name="chassis_number" placeholder="Chassis Number" required />
-                        <input name="engine_number" placeholder="Engine Number" required />
+                        <input name="engine_number" placeholder="Engine Number (Optional)" />
                     </div>
                 </div>
                 <div className="form-row" style={{marginTop: '15px'}}>

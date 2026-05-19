@@ -303,7 +303,6 @@ def get_dashboard_stats(
                     "type": asset.model,
                     "model": asset.model,
                     "plate_number": asset.plate_number,
-                    "chassis_number": asset.chassis_number,
                     "engine_number": asset.engine_number,
                     "karota_number": asset.karota_number
                 }
@@ -354,11 +353,20 @@ def get_dashboard_stats(
         asset_query = asset_query.filter(Asset.vendor_id == vendor_id)
         contract_query = contract_query.join(Asset).filter(Asset.vendor_id == vendor_id)
         
+        if current_user.role == UserRole.MASTER_ADMIN:
+            client_query = client_query.filter(Client.manager_id == current_user.id)
+            asset_query = asset_query.filter(Asset.manager_id == current_user.id)
+            contract_query = contract_query.filter(Asset.manager_id == current_user.id)
+            
     total_receivable = db.query(sql_func.sum(FinancingContract.remaining_balance)).select_from(contract_query.subquery()).scalar() or 0
+    total_asset_value = db.query(sql_func.sum(FinancingContract.total_value)).select_from(contract_query.subquery()).scalar() or 0
+    total_paid = total_asset_value - total_receivable
     
     # Financial Privacy for Super Admin (Dev Profile)
     if current_user.role == UserRole.SUPER_ADMIN:
         total_receivable = 0
+        total_asset_value = 0
+        total_paid = 0
 
     return {
         "total_vendors": vendor_query.count(),
@@ -367,5 +375,7 @@ def get_dashboard_stats(
         "stock_assets": asset_query.filter(Asset.status == AssetStatus.STOCK).count(),
         "managed_assets": asset_query.filter(Asset.status == AssetStatus.MANAGED).count(),
         "assigned_assets": asset_query.filter(Asset.status == AssetStatus.ASSIGNED).count(),
-        "total_receivable": total_receivable
+        "total_receivable": total_receivable,
+        "total_asset_value": total_asset_value,
+        "total_paid": total_paid
     }

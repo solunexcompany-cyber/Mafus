@@ -30,7 +30,6 @@ def global_search(
         or_(
             Asset.plate_number.ilike(f"%{q}%"),
             Asset.karota_number.ilike(f"%{q}%"),
-            Asset.chassis_number.ilike(f"%{q}%"),
             Asset.internal_id.ilike(f"%{q}%"),
             Client.national_id.ilike(f"%{q}%"),
             Client.full_name.ilike(f"%{q}%"),
@@ -53,7 +52,6 @@ def global_search(
             "internal_id": asset.internal_id,
             "plate": asset.plate_number,
             "karota": asset.karota_number,
-            "chassis": asset.chassis_number,
             "engine": asset.engine_number,
             "model": asset.model,
             "status": asset.status

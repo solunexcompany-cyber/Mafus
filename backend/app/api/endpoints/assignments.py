@@ -42,7 +42,6 @@ def create_contract(
 
     # 1. Update Asset technical details
     asset.plate_number = contract_in.plate_number
-    asset.chassis_number = contract_in.chassis_number
     asset.engine_number = contract_in.engine_number
     asset.karota_number = contract_in.karota_number
     asset.status = AssetStatus.ASSIGNED

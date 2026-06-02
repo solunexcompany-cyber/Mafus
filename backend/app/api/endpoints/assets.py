@@ -16,7 +16,7 @@ class ManagerAssignment(BaseModel):
 
 router = APIRouter()
 
-@router.get("/search", response_model=dict)
+@router.get("/search-intelligence", response_model=dict)
 def global_search(
     q: str = Query(..., min_length=2),
     db: Session = Depends(deps.get_db),

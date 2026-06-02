@@ -1,0 +1,310 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(2, 4, 8, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.modalCard {
+  background-color: #0b0f19;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh; /* Prevents overflow clipping on small viewports */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}
+
+.modalHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid #1e293b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #f8fafc;
+  letter-spacing: 0.5px;
+}
+
+.stepIndicator {
+  margin: 4px 0 0 0;
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: #3b82f6;
+  font-weight: bold;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.closeButton:hover {
+  color: #f1f5f9;
+}
+
+.progressBarWrapper {
+  width: 100%;
+  height: 3px;
+  background-color: #1e293b;
+}
+
+.progressBarFill {
+  height: 100%;
+  background-color: #3b82f6;
+  transition: width 0.3s ease-in-out;
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-grow: 1;
+}
+
+/* THE SCROLL CONTROLLER: This binds the form parameters cleanly inside the viewport */
+.scrollableContent {
+  padding: 24px;
+  overflow-y: auto;
+  flex-grow: 1;
+  max-height: calc(90vh - 150px);
+}
+
+.stepContainer h4 {
+  margin: 0 0 16px 0;
+  font-size: 0.95rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.inputGroup {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inputGroup label {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.inputGroup input,
+.inputGroup select,
+.inputGroup textarea {
+  background-color: #04070d;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #f8fafc;
+  font-size: 0.875rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.inputGroup input:focus,
+.inputGroup select:focus,
+.inputGroup textarea:focus {
+  border-color: #3b82f6;
+}
+
+.rowSplit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.toggleRow {
+  margin: 8px 0 16px 0;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+.checkboxLabel input {
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+.fileDropZone {
+  border: 2px dashed #1e293b;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  background-color: #04070d;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.fileDropZone:hover {
+  border-color: #3b82f6;
+}
+
+.fileIcon {
+  font-size: 1.5rem;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.fileDropZone p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.notificationAlert {
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 0.8rem;
+  color: #93c5fd;
+}
+
+.inactiveAlert {
+  background-color: rgba(30, 41, 59, 0.5);
+  border: 1px solid #1e293b;
+  padding: 16px;
+  border-radius: 6px;
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+/* REVIEW SCREEN DESIGN */
+.reviewDescription {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0 0 16px 0;
+}
+
+.reviewLedger {
+  background-color: #04070d;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reviewRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+  padding-bottom: 8px;
+}
+
+.reviewRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.reviewRow span {
+  color: #64748b;
+}
+
+.reviewRow strong {
+  color: #f1f5f9;
+}
+
+.textEmerald {
+  color: #10b981 !important;
+}
+
+/* ACTIONS BAR FOOTER COMPONENTS */
+.modalFooter {
+  padding: 16px 24px;
+  border-top: 1px solid #1e293b;
+  display: flex;
+  justify-content: space-between;
+  background-color: #0b0f19;
+}
+
+.primaryButton, .secondaryButton, .commitButton {
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.2s;
+}
+
+.primaryButton {
+  background-color: #3b82f6;
+  border: none;
+  color: #ffffff;
+  margin-left: auto;
+}
+
+.secondaryButton {
+  background-color: transparent;
+  border: 1px solid #1e293b;
+  color: #94a3b8;
+}
+
+.commitButton {
+  background-color: #10b981;
+  border: none;
+  color: #ffffff;
+  margin-left: auto;
+}
+
+.primaryButton:hover, .secondaryButton:hover, .commitButton:hover {
+  opacity: 0.9;
+}
+
+
+
+/* --- EXTRA MOBILE RESPONSIVE MEDIA BREAKPOINT --- */
+@media (max-width: 480px) {
+  .rowSplit {
+    grid-template-columns: 1fr; /* Flattens columns into a clean, stackable row single sequence */
+    gap: 12px;
+  }
+  
+  .modalCard {
+    max-height: 95vh; /* Re-allocates text area space on ultra-short mobile units */
+  }
+  
+  .scrollableContent {
+    padding: 16px; /* Optimized cushion padding for dense touch panels */
+    max-height: calc(95vh - 140px);
+  }
+  
+  .modalFooter {
+    padding: 12px 16px;
+  }
+}

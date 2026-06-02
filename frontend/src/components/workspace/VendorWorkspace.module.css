@@ -1,0 +1,416 @@
+/* src/components/workspace/VendorWorkspace.module.css */
+.workspaceContainer {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background-color: #04070d;
+  color: #f8fafc;
+  font-family: system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 280px;
+  min-width: 280px;
+  background-color: #0b0f19;
+  border-right: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 16px;
+  box-sizing: border-box;
+}
+
+.brandBlock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  padding: 0 8px;
+}
+
+.avatarEnterprise {
+  width: 40px;
+  height: 40px;
+  background-color: #10b981;
+  color: #ffffff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.brandText h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #f8fafc;
+  letter-spacing: 0.5px;
+}
+
+.brandText span {
+  font-size: 0.7rem;
+  color: #10b981;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.navLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-grow: 1;
+}
+
+.navBtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 12px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  text-align: left;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.navBtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.navBtn:hover {
+  background-color: rgba(30, 41, 59, 0.5);
+  color: #f1f5f9;
+}
+
+.active {
+  background-color: #1e293b !important;
+  color: #10b981 !important;
+  font-weight: 500;
+}
+
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: 1px solid #1e293b;
+  color: #64748b;
+  padding: 12px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  font-family: inherit;
+  margin-top: auto;
+}
+
+.logoutBtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.logoutBtn:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* MAIN BODY AND SUB VIEWS STYLESETS */
+.mainContent {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.topHeader {
+  height: 70px;
+  background-color: #0b0f19;
+  border-bottom: 1px solid #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+}
+
+.contextNode {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pulseDotGreen {
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+}
+
+.contextNode h3 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-family: monospace;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+}
+
+.headerActions {
+  display: flex;
+  gap: 12px;
+}
+
+.primaryActionBtn, .secondaryActionBtn {
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.2s;
+}
+
+.primaryActionBtn {
+  background-color: #10b981;
+  border: none;
+  color: #ffffff;
+}
+
+.primaryActionBtn:disabled {
+  background-color: #1e293b;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.secondaryActionBtn {
+  background-color: transparent;
+  border: 1px solid #1e293b;
+  color: #cbd5e1;
+}
+
+.primaryActionBtn:hover:not(:disabled), .secondaryActionBtn:hover {
+  opacity: 0.9;
+}
+
+.contentViewport {
+  padding: 32px;
+  flex-grow: 1;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.scrollBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* STATS METRIC DISPLAY GRID */
+.statsMetricsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.metricCard {
+  background-color: #0b0f19;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metricCard h4 {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metricVal {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #f8fafc;
+}
+
+.metricCard span {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.textBlue { color: #3b82f6 !important; }
+.textAmber { color: #f59e0b !important; }
+
+/* DATA LEDGER CARDS AND DATA TABLE STRUCTURES */
+.dataGridCard {
+  background-color: #0b0f19;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.dataGridCard h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.05rem;
+  color: #f1f5f9;
+}
+
+.subTextText {
+  margin: 0 0 20px 0;
+  font-size: 0.825rem;
+  color: #64748b;
+}
+
+.cardHeaderFlex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.errorAlertInline {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.tableElement {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.tableElement th {
+  border-bottom: 1px solid #1e293b;
+  padding: 12px 16px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.tableElement td {
+  border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+  padding: 16px;
+  color: #cbd5e1;
+}
+
+.shellBadge {
+  display: block;
+  font-size: 0.7rem;
+  color: #f59e0b;
+  margin-top: 4px;
+  font-family: monospace;
+}
+
+.monoText { font-family: monospace; }
+
+.statusPill {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.725rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.statusActive {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.placeholderGraphWindow {
+  background-color: #04070d;
+  border: 1px dashed #1e293b;
+  border-radius: 8px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+/* SPLIT DECK DETAILS FOR INVENTORY ASSETS */
+.inventorySplitFlex {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.splitBox {
+  background-color: #04070d;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+}
+
+.splitBox h5 {
+  margin: 0 0 12px 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+}
+
+.largeSplitNum {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #f1f5f9;
+  margin-bottom: 12px;
+}
+
+.splitBox p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.financeSummaryBox p {
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
+}
+
+.financeSummaryBox strong {
+  color: #10b981;
+}
+
+.inputGroupStub label {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.stubInput {
+  background-color: #04070d;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #64748b;
+  font-size: 0.85rem;
+  width: 100%;
+  max-width: 400px;
+  outline: none;
+}
+
+.pulseIndicatorDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background-color: #3b82f6;
+  border-radius: 50%;
+  margin-right: 6px;
+}

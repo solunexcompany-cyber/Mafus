@@ -42,8 +42,9 @@ def generate_vendor_tag(db: Session):
     for (t,) in tags:
         if t and t.startswith("VEN-"):
             try:
-                nums.append(int(t.split("-")[1]))
-            except (ValueError, IndexError):
+                # Target the numbers block at index 1
+                nums.append(int(t.split("-")[1])) 
+            except (ValueError, IndexError, TypeError):
                 pass
     max_num = max(nums) if nums else 0
     return f"VEN-{(max_num + 1):03d}"
@@ -58,6 +59,7 @@ def create_vendor_and_owner(
     owner_email: str = Body(...),
     owner_password: str = Body(...),
     owner_full_name: str = Body(...),
+    owner_username: Optional[str] = Body(None), 
     cac_number: Optional[str] = Body(None),
     business_address: Optional[str] = Body(None),
     contact_phone: Optional[str] = Body(None),
@@ -66,6 +68,7 @@ def create_vendor_and_owner(
     if db.query(Vendor).filter(Vendor.business_name == name).first():
         raise HTTPException(status_code=400, detail="Vendor name already exists")
     
+    # 1. Initialize and save Vendor record
     vendor = Vendor(
         business_name=name,
         vendor_tag=generate_vendor_tag(db),
@@ -79,18 +82,58 @@ def create_vendor_and_owner(
     db.commit()
     db.refresh(vendor)
     
-    user = User(
+    # Base fallback configuration for username separation
+    provided_username = owner_username if owner_username else owner_email
+
+    # Ensure Owner Username doesn't have an unintentional suffix
+    owner_final_username = provided_username.replace("_admin", "") if provided_username.endswith("_admin") else provided_username
+
+    if db.query(User).filter((User.email == owner_email) | (User.username == owner_final_username)).first():
+        raise HTTPException(status_code=400, detail="Owner email or username already registered")
+
+    # 2. Create the distinct Vendor Owner profile
+    owner_user = User(
         email=owner_email,
-        username=owner_email,
+        username=owner_final_username,
         full_name=owner_full_name,
         hashed_password=get_password_hash(owner_password),
         role=UserRole.VENDOR_OWNER,
         vendor_id=vendor.id,
         is_active=True
     )
-    db.add(user)
+    db.add(owner_user)
+
+    # Differentiate the Master Admin Email & Username structurally to bypass unique constraints
+    if "@" in owner_email:
+        email_prefix, email_domain = owner_email.split("@", 1)
+        admin_email = f"{email_prefix}.admin@{email_domain}"
+    else:
+        admin_email = f"{owner_email}.admin"
+
+    admin_final_username = f"{owner_final_username}_admin"
+
+    # 3. Provision exactly 1 Default Activated Master Admin profile framework 
+    master_admin_shell = User(
+        email=admin_email,  # ✅ Unique email variant
+        username=admin_final_username,  # ✅ Unique username variant
+        full_name=f"{owner_full_name} (Master Admin)",
+        hashed_password=get_password_hash(owner_password),
+        role=UserRole.MASTER_ADMIN,
+        vendor_id=vendor.id,
+        is_active=True
+    )
+    db.add(master_admin_shell)
+    
+    # Commit both separate profiles atomically to database tables
     db.commit()
-    return {"message": "Vendor created", "vendor_id": vendor.id, "vendor_tag": vendor.vendor_tag}
+    
+    return {
+        "message": "Vendor and Ecosystem Base Config profiles created successfully.",
+        "vendor_id": vendor.id,
+        "vendor_tag": vendor.vendor_tag,
+        "owner_username": owner_user.username,
+        "master_admin_username": master_admin_shell.username
+    }
 
 @router.get("/vendor", response_model=List[dict])
 def list_vendors(db: Session = Depends(deps.get_db)):
@@ -358,8 +401,9 @@ def get_dashboard_stats(
             asset_query = asset_query.filter(Asset.manager_id == current_user.id)
             contract_query = contract_query.filter(Asset.manager_id == current_user.id)
             
-    total_receivable = db.query(sql_func.sum(FinancingContract.remaining_balance)).select_from(contract_query.subquery()).scalar() or 0
-    total_asset_value = db.query(sql_func.sum(FinancingContract.total_value)).select_from(contract_query.subquery()).scalar() or 0
+    # FIXED: Replaced nested db.query subqueries with target direct modifications (.with_entities)
+    total_receivable = contract_query.with_entities(sql_func.sum(FinancingContract.remaining_balance)).scalar() or 0
+    total_asset_value = contract_query.with_entities(sql_func.sum(FinancingContract.total_value)).scalar() or 0
     total_paid = total_asset_value - total_receivable
     
     # Financial Privacy for Super Admin (Dev Profile)

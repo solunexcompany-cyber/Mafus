@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAFOS MVP - Master System Specification Document</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .document-container {
+            background-color: #ffffff;
+            padding: 50px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #e1e1e1;
+        }
+        h1 {
+            color: #1a365d;
+            border-bottom: 3px solid #2b6cb0;
+            padding-bottom: 10px;
+            font-size: 28px;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #2c5282;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+            font-size: 22px;
+            margin-top: 35px;
+        }
+        h3 {
+            color: #4a5568;
+            font-size: 16px;
+            margin-top: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        ul, ol {
+            margin-bottom: 20px;
+            padding-left: 25px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .note-box {
+            background-color: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+            font-style: italic;
+        }
+        .sticky-box {
+            background-color: #fffaf0;
+            border-left: 4px solid #dd6b20;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+            font-weight: bold;
+        }
+        .citation {
+            font-size: 11px;
+            color: #a0aec0;
+            font-weight: bold;
+            vertical-align: super;
+            margin-left: 2px;
+        }
+        @media print {
+            body { background-color: #ffffff; margin: 0; padding: 0; }
+            .document-container { box-shadow: none; border: none; padding: 0; }
+            h2 { page-break-before: always; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="document-container">
+    <h1>MAFOS MVP - Master System Specification Document</h1>
+    <p><strong>System Classification:</strong> Production Ready Specification Framework (MVP Phase)</p>
+    <p><strong>Target Audience:</strong> Frontend Engineering, Backend Engineering, QA Automation Teams</p>
+
+    <h2>Section 1: The Developer Workspace (Super Admin)</h2>
+    <p>The developer platform serves as the master administration cockpit to monitor ecosystem data, modify global services, and orchestrate underlying tenant instances.<span class="citation">[cite: 1]</span></p>
+    
+    <h3>1. Core Menu Architecture</h3>
+    <ul>
+        <li><strong>a. The Dashboard:</strong> A visual interface tracking global platform services and system-wide asset onboarding registration health.<span class="citation">[cite: 2, 3]</span> This workspace displays metric cards and numerical graphs summarizing platform activities.<span class="citation">[cite: 8]</span></li>
+        <li><strong>b. Registration and Onboarding:</strong> The critical intake dashboard handling the primary configurations and onboarding routing workflows for vendors.<span class="citation">[cite: 4, 10, 12]</span></li>
+        <li><strong>c. Data Inflow and Outflow Monitoring & Analytical View:</strong> A localized streaming node monitoring and visualization deck handling platform analytics.<span class="citation">[cite: 5]</span></li>
+        <li><strong>d. Services Layer:</strong> The infrastructure configurations console controlling core microservices, system environment thresholds, and global security features.<span class="citation">[cite: 6]</span></li>
+    </ul>
+
+    <h3>2. The 4-Step Vendor Onboarding Form Wizard</h3>
+    <p>Before activation or generation of a unique routed instance, the form requires a split multi-step data wizard capturing corporate structures.<span class="citation">[cite: 12, 13]</span></p>
+    
+    <ul>
+        <li><strong>Section A: Personal Data</strong>
+            <ul>
+                <li>Full Legal Name of the profile applicant.<span class="citation">[cite: 15]</span></li>
+                <li>Mail Address for communication.<span class="citation">[cite: 16]</span></li>
+                <li>Contact Phone Number.<span class="citation">[cite: 17]</span></li>
+                <li>Full Residential Address configuration.<span class="citation">[cite: 18]</span></li>
+                <li>Passport or photograph file upload for system profile generation.<span class="citation">[cite: 19]</span></li>
+                <li>Date of Birth explicitly formatted as (dd/mm/yyyy).<span class="citation">[cite: 20]</span></li>
+            </ul>
+        </li>
+        <li><strong>Section B: Business Registration</strong>
+            <ul>
+                <li>Business Description: A dropdown selection choosing from large asset-heavy sectors, including keke napep / tricycle vendor, mini KurKura vendor, motorcycle Vendor, POS vendor, and Car vendor models.<span class="citation">[cite: 22]</span></li>
+                <li>Business Type: A dropdown selector parsing corporate structures, including individual, collaboration, partnership, or group models.<span class="citation">[cite: 23]</span></li>
+                <li>Business Registration Status: A toggle parsing entity configurations between registered and non registered.<span class="citation">[cite: 24]</span></li>
+                <li>Physical Business Address.<span class="citation">[cite: 25]</span></li>
+                <li>Business Phone Number (Optional field configuration).<span class="citation">[cite: 26]</span></li>
+                <li>Workers Count Scale: A dropdown scale selection mapping total workers within a 1 to 1000 threshold range.<span class="citation">[cite: 27]</span></li>
+                <li>Managers Count Scale: A dropdown scale selection tracking total company managers within a 1 to 1000 threshold range.<span class="citation">[cite: 28]</span></li>
+            </ul>
+        </li>
+        <li><strong>Section C: Documentation</strong>
+            <div class="note-box">
+                <strong>Conditional Rule Architecture:</strong> The validation constraints for Corporate Affairs Commission (CAC) Certificate uploads and RC Numbers rely strictly on the business status selected in Section B. They remain conditionally hidden or non-mandatory unless "Registered" is checked.<span class="citation">[cite: 30]</span>
+            </div>
+            <ul>
+                <li>CAC Certificate file upload component.<span class="citation">[cite: 31]</span></li>
+                <li>Business Description and Type Photo Upload: A visual validation upload containing field fleet photographs, such as pictures of the tricycles or relevant assets.<span class="citation">[cite: 32]</span></li>
+                <li>Alphanumeric RC Number input field.<span class="citation">[cite: 33]</span></li>
+                <li>Supplementary file upload portal for any other supporting business certificates.<span class="citation">[cite: 34]</span></li>
+            </ul>
+        </li>
+        <li><strong>Section D: Review and Submit</strong>
+            <ul>
+                <li>An execution summary screen allowing users to review all nested forms before committing data pipelines to the server database.<span class="citation">[cite: 36]</span></li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>3. Lifecycle Validation and Registration Business Logic</h3>
+    <ul>
+        <li><strong>External Application Route:</strong> If an entity applies externally via public web forms, clicking submit generates a profile but routes the record into a "Processing" status queue, displaying a tracking card allowing the applicant to monitor onboarding status.<span class="citation">[cite: 37]</span></li>
+        <li><strong>Developer Bypass Privilege:</strong> If the onboarding form is filled out directly by a Developer within this administration panel, the application bypasses all queues and automatically sets the vendor to fully onboarded upon click submission.<span class="citation">[cite: 38]</span></li>
+        <li><strong>Scope Requirement:</strong> All components defined within Section 1 are explicitly required for the core MVP launch baseline.<span class="citation">[cite: 39]</span></li>
+    </ul>
+
+    <h2>Section 2: The Vendor Workspace (Company Owners)</h2>
+    <p>Following successful application onboarding, the Vendor profile unlocks a dedicated commercial workspace workspace initialization layer.<span class="citation">[cite: 42]</span></p>
+    <p><strong>Ecosystem Base Config:</strong> On successful activation, the system provisions exactly 1 default activated Master Admin profile framework to jumpstart localized fleet operations.<span class="citation">[cite: 42]</span></p>
+
+    <h3>1. Core Menu Architecture</h3>
+    <ul>
+        <li><strong>Dashboard:</strong> Unified data grid serving statistical data representation, analytics layout, and asset performance insightment views.<span class="citation">[cite: 43, 50]</span></li>
+        <li><strong>Master Admin Monitoring and Registration:</strong> Operations panel handling recruitment, validation, and dashboard management for company operations managers.<span class="citation">[cite: 44]</span></li>
+        <li><strong>Asset Registration:</strong> Inventory control panel explicitly separating total metrics between number of assets distributed versus number of assets sitting on the ground waiting for distribution.<span class="citation">[cite: 45]</span></li>
+        <li><strong>Financial Insight and Accountability:</strong> Corporate cash ledger tracking payment workflows across the company tenant.<span class="citation">[cite: 46]</span></li>
+        <li><strong>Client/Drivers Monitoring:</strong> Live oversight grid monitoring field operators and drivers assigned to corporate assets.<span class="citation">[cite: 47]</span></li>
+        <li><strong>Setup and Exit:</strong> Local client parameters modification tools and secure session exit links.<span class="citation">[cite: 48]</span></li>
+    </ul>
+
+    <h3>2. Master Admin Monitoring and Registration Form Wizard</h3>
+    <p>The manager configuration is structured as a segmented data submission form wizard to safely provision field coordinators.<span class="citation">[cite: 52]</span></p>
+    
+    <div class="note-box">
+        <strong>Default Slot Optimization Logic:</strong> If this setup represents the vendor's initial action, the system targets the pre-loaded default profile shell to edit and fill information. Subsequent registration triggers generate completely fresh Master Admin instances.<span class="citation">[cite: 53]</span>
+    </div>
+    <div class="note-box">
+        <strong>Hard Limit Threshold Enforcements:</strong> The frontend application must enforce a maximum cap limit of exactly 3 Master Admins total per vendor tenant, inclusive of the pre-loaded default shell profile. Provisioning a 4th instance locks the interface and triggers a validation error informing the user that MAFOS service provider actions are required to expand cap limits.<span class="citation">[cite: 54]</span>
+    </div>
+
+    <ul>
+        <li><strong>Section A: Bio Data</strong>
+            <ul>
+                <li>Admin's Full Legal Name.<span class="citation">[cite: 56]</span></li>
+                <li>Mobile Phone Number.<span class="citation">[cite: 57]</span></li>
+                <li>Physical Home Address.<span class="citation">[cite: 58]</span></li>
+                <li>Contact Email Address.<span class="citation">[cite: 59]</span></li>
+                <li>Current Occupation.<span class="citation">[cite: 60]</span></li>
+                <li>Target Industry mapping.<span class="citation">[cite: 61]</span></li>
+            </ul>
+        </li>
+        <li><strong>Section B: Documentation</strong>
+            <ul>
+                <li>Clear Profile Picture upload component.<span class="citation">[cite: 63]</span></li>
+                <li>Professional Certifications (Optional field config).<span class="citation">[cite: 64]</span></li>
+                <li>Academic Qualifications (Optional field config).<span class="citation">[cite: 65]</span></li>
+                <li>Guarantor Portrait Picture upload component (Optional field config).<span class="citation">[cite: 66]</span></li>
+                <li>Guarantor Form signature upload component (Optional field config).<span class="citation">[cite: 67]</span></li>
+            </ul>
+        </li>
+        <li><strong>Section C: Authentication</strong>
+            <ul>
+                <li>System Username string configuration.<span class="citation">[cite: 69]</span></li>
+                <li>Strong Password input field.<span class="citation">[cite: 70]</span></li>
+                <li>Repeat Password confirmation checking.<span class="citation">[cite: 71]</span></li>
+                <li>System generated secure Recovery Phrases for emergency account rescue workflows.<span class="citation">[cite: 72]</span></li>
+            </ul>
+        </li>
+        <li><strong>Section D: Review and Submit</strong>
+            <ul>
+                <li>A validation summary allowing profile state saving routines.<span class="citation">[cite: 73]</span></li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>3. Activation Flow Constraints</h3>
+    <ul>
+        <li><strong>Internal Authorization:</strong> When a Master Admin is directly registered inside the Vendor Services console, they bypass secondary reviews and activate instantly with no approval delay.<span class="citation">[cite: 74]</span></li>
+        <li><strong>Routed Portal Intake:</strong> If an individual signs up externally via the Platform or Global platform using a Vendor's Unique Routed ID, their account initializes in a locked state and must wait for explicit vendor responses to activate the profile. The profile remains functional-less until explicit approvals occur.<span class="citation">[cite: 74, 75]</span></li>
+    </ul>
+
+    <h3>4. Public Fleet Exposure and Manager Asset Allocation Engine</h3>
+    <ul>
+        <li><strong>Marketplace Lead Aggregation:</strong> All registered asset items, such as vehicles, tricycles/keke napeps, cars, or POS setups, populate public layouts.<span class="citation">[cite: 76, 77]</span> When public visitors search the global job opportunity or leasing marketplace, the system exposes the public profile page of the vendor to show total distributed assets versus total available assets ready for deployment.<span class="citation">[cite: 77, 78]</span></li>
+        <li><strong>Manager Allocation Engine Flow:</strong> The Vendor selects a quantity of unassigned available inventory stock from their pool and pushes ownership blocks to a Master Admin.<span class="citation">[cite: 78]</span>
+            <ul>
+                <li><em>UI Simulation Interaction:</em> Vendor views total asset counts (e.g., Total Assets = 50 tricycles)[cite: 78]. They invoke an asset assignment modal, select an active manager profile (e.g., [Choose Manager: Abduljabbar]), define the vehicle configuration (e.g., Asset = tricycle), and define quantities (e.g., Numbers = 30)[cite: 79, 80, 81, 82].</li>
+                <li><em>Interlocking Modal Guard:</em> The UI fires a confirmation modal: "30 tricycle will be assigned to Abduljabbar and will be ready for distribution, proceed?"[cite: 82].</li>
+                <li><em>Downstream Execution:</em> On user confirmation, the data pipeline updates state targets and reflects instantly on the assigned master admin profile dashboard, displaying metrics for assigned assets versus assets distributed to drivers.<span class="citation">[cite: 83]</span></li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>5. Financial Insights and Accountability Grid</h3>
+    <ul>
+        <li>The workspace incorporates a financial metrics engine processing tracking cycles across daily, weekly, and monthly payment flows.<span class="citation">[cite: 85]</span></li>
+        <li>The Vendor UI has comprehensive monitoring blocks tracing what balances remain left in the field, what values are safely settled, and exact values expected in upcoming pipeline periods.<span class="citation">[cite: 86]</span></li>
+    </ul>
+
+    <h2>Section 3: The Vendor Manager Workspace (Master Admin)</h2>
+    <p>The Master Admin layout serves as the frontline supervisor console controlling driver groups, execution logs, collection parameters, client onboarding pipelines, and localized asset distributions.<span class="citation">[cite: 91]</span></p>
+
+    <h3>1. Core Menu Architecture</h3>
+    <ul>
+        <li><strong>Dashboard:</strong> Operational cockpit showing processing charts for payment inflow and outflow streams, collection percentages, totals, overdue balances, and active debts.<span class="citation">[cite: 93, 98, 99]</span></li>
+        <li><strong>Registration and Assignment:</strong> Form wizard interface to onboard drivers and bind physical inventory devices or vehicles to active client sheets.<span class="citation">[cite: 94, 101]</span></li>
+        <li><strong>Account and Financing Management:</strong> Configuration workspace used to establish and track contract structures, processing full assigned payment thresholds, daily collection schedules, weekly payment timelines, or monthly configurations based on selected range setups.<span class="citation">[cite: 95]</span></li>
+        <li><strong>Security and Tracks:</strong> Security center providing operational auditing, tracking for field devices or vehicles, and database lookups relative to assigned asset states.<span class="citation">[cite: 91, 96]</span></li>
+        <li><strong>Services and Exit:</strong> Standard interface adjustments console and secure session token termination keys.<span class="citation">[cite: 97]</span></li>
+    </ul>
+
+    <h3>2. The 4-Step Client Onboarding Form Wizard</h3>
+    <p>When provisioning a driver, asset collector, or client consumer, the Master Admin executes a multi-step verification form wizard.<span class="citation">[cite: 101, 135]</span></p>
+    
+    <ul>
+        <li><strong>Section A: Bio Data</strong>
+            <ul>
+                <li>Full Legal Name of the driver.<span class="citation">[cite: 103]</span></li>
+                <li>Mobile Phone Number.<span class="citation">[cite: 104]</span></li>
+                <li>Full Residential Address logging: Multi-input tracking mapping Address A, Address B, and Current Living Location details.<span class="citation">[cite: 105]</span></li>
+                <li>Contact Email Address (Optional field config).<span class="citation">[cite: 106]</span></li>
+                <li>Current Occupation.<span class="citation">[cite: 107]</span></li>
+                <li>Marital Status selector.<span class="citation">[cite: 108]</span></li>
+                <li>Religion tracking.<span class="citation">[cite: 109]</span></li>
+                <li>Tribe background mapping.<span class="citation">[cite: 110]</span></li>
+                <li>Qualifications and Professional Details (Optional field config).<span class="citation">[cite: 111]</span></li>
+                <li>Asset Familiarity Switch: A required selector checking if the operator is "New to asset" or "Already familiar with the asset" relative to the deployment item type (e.g., new rider to Tricycle, car, mini Kur-kura, or general vehicles).<span class="citation">[cite: 112]</span></li>
+                <li>Ownership Legacy Form: Details capturing past riding vendor configurations or past vehicle ownership histories. This form element is conditionally visible only if "Already familiar" is toggled.<span class="citation">[cite: 113]</span></li>
+            </ul>
+        </li>
+        <li><strong>Section B: Documentation</strong>
+            <ul>
+                <li>Clear passport-format profile photo upload component.<span class="citation">[cite: 115]</span></li>
+                <li>Digital Driving License string input field.<span class="citation">[cite: 116]</span></li>
+                <li>Driving License official document file uploader.<span class="citation">[cite: 117]</span></li>
+                <li>Alphanumeric Vehicle Plate Number input field.<span class="citation">[cite: 118]</span></li>
+                <li>Clear Vehicle Plate photo upload component.<span class="citation">[cite: 119]</span></li>
+                <li>Alphanumeric Karota Identification Number string input field.<span class="citation">[cite: 120]</span></li>
+                <li>Supplementary Qualification and Certificate upload portal (Optional field config).<span class="citation">[cite: 121]</span></li>
+            </ul>
+        </li>
+        <li><strong>Section B.1: Guarantor Profile</strong>
+            <ul>
+                <li>Guarantor Full Legal Name.<span class="citation">[cite: 123]</span></li>
+                <li>Physical Address configuration.<span class="citation">[cite: 124]</span></li>
+                <li>Relationship metrics validation string.<span class="citation">[cite: 125]</span></li>
+                <li>Professional Rank or Corporate Role identifier (Optional field config).<span class="citation">[cite: 126]</span></li>
+                <li>Current verified Residential Living Location.<span class="citation">[cite: 127]</span></li>
+                <li>Current Occupation.<span class="citation">[cite: 128]</span></li>
+                <li>Passport-format photograph upload component.<span class="citation">[cite: 129]</span></li>
+            </ul>
+        </li>
+        <li><strong>Section C: Authentication</strong>
+            <ul>
+                <li>System Username string configuration.<span class="citation">[cite: 131]</span></li>
+                <li>Account access Password input field.<span class="citation">[cite: 132]</span></li>
+                <li>Repeat Password validation verification.<span class="citation">[cite: 133]</span></li>
+                <li>Secure account Recovery Phrases generator loop for backup rescue paths.<span class="citation">[cite: 134]</span></li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>Section 4: The Client / Driver / Asset Collector Portal</h2>
+    <p>This layout represents the driver engagement interface, designed as a minimalist, accessible layout optimized for mobile field terminals.<span class="citation">[cite: 135, 136, 137]</span></p>
+
+    <div class="sticky-box">
+        📌 Critical Core UX Architecture Rule (The Pinned Account Header):<br>
+        To ensure collection efficiency and remove friction, all corporate bank account numbers designated for driver payment deposits must be rendered inside a prominent, high-contrast, sticky header element. This payment box remains permanently fixed to the absolute top of the viewport frame. Even when a driver navigates across separate menu sections, this corporate bank account info elements remain rendered at top of the screen at all times.<span class="citation">[cite: 138]</span>
+    </div>
+
+    <h3>1. Core MVP Menu Framework</h3>
+    <ol>
+        <li><strong>1. Dashboard View:</strong> The primary interface display showing real-time active asset assignment tracking status and fast indicators.<span class="citation">[cite: 140]</span></li>
+        <li><strong>2. Financial Ledger View:</strong> A high-contrast financial statement sheet displaying complete timelines of historical payments made, upcoming daily or weekly contractual installments due, and active field overdue debt markers.<span class="citation">[cite: 141]</span></li>
+        <li><strong>3. Notification and Announcements Feed:</strong> A localized inbox where operational supervisors push security updates, real-time platform flashes, and system announcements.<span class="citation">[cite: 142]</span></li>
+    </ol>
+
+    <p style="text-align: center; color: #a0aec0; margin-top: 40px; font-size: 12px;">--- End of Core MVP Specification Document ---</p>
+</div>
+
+</body>
+</html>

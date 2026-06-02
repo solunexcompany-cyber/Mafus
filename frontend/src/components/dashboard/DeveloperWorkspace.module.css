@@ -1,0 +1,452 @@
+/* ==========================================================================
+   MAFOS DEVELOPER WORKSPACE STYLES (PURE COMPONENT CSS MODULE)
+   ========================================================================== */
+
+.workspace {
+  min-height: 100vh;
+  background-color: #020617;
+  color: #f1f5f9;
+  display: flex;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Fixed Navigation Sidebar */
+.sidebar {
+  width: 18rem;
+  background-color: #0f172a;
+  border-right: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem;
+}
+
+.logoArea {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #1e293b;
+}
+
+.logoIcon {
+  padding: 0.5rem;
+  background-color: #2563eb;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoIcon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.logoText h1 {
+  font-weight: 900;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+.logoText span {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3b82f6;
+  display: block;
+}
+
+.navLinks {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.navButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.navButton svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  stroke: currentColor;
+}
+
+.navButton:hover {
+  background-color: rgba(30, 41, 59, 0.6);
+  color: #e2e8f0;
+}
+
+.navButtonActive {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.sidebarBottom {
+  padding-top: 1rem;
+  border-top: 1px solid #1e293b;
+}
+
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0 0.5rem;
+}
+
+.avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  background-color: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #60a5fa;
+  border: 1px solid #334155;
+}
+
+.profileText p {
+  margin: 0;
+}
+.tierLabel {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+.userName {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.logoutButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #f43f5e;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.logoutButton:hover {
+  background-color: rgba(244, 63, 94, 0.05);
+  border-color: rgba(244, 63, 94, 0.1);
+}
+.logoutButton svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Main Display Engine Layout */
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.header {
+  height: 5rem;
+  border-bottom: 1px solid #0f172a;
+  background-color: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.contextNode {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pulseDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: #10b981;
+}
+
+.contextText {
+  font-family: monospace;
+  font-size: 0.875rem;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+}
+.contextActive {
+  color: #f1f5f9;
+  font-weight: 700;
+}
+
+.wizardButton {
+  background-color: #2563eb;
+  color: white;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.wizardButton:hover {
+  background-color: #3b82f6;
+}
+
+.contentViewport {
+  padding: 2rem;
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Stats Telemetry System */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.statCard {
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.statCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.statusBadge {
+  padding: 0.125rem 0.5rem;
+  background-color: #020617;
+  color: #94a3b8;
+  border: 1px solid #1e293b;
+  font-family: monospace;
+  font-size: 10px;
+  border-radius: 0.25rem;
+}
+
+.statValue {
+  font-size: 1.875rem;
+  font-weight: 900;
+  color: #f1f5f9;
+  margin: 1rem 0 0 0;
+  letter-spacing: -0.02em;
+}
+
+.statInfo {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0.25rem 0 0 0;
+}
+
+/* Ledger Data Tables */
+.tableWrapper {
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.tableHeader {
+  padding: 1.5rem;
+  border-bottom: 1px solid #1e293b;
+  background-color: rgba(15, 23, 42, 0.2);
+}
+.tableHeader h3 {
+  font-weight: 800;
+  font-size: 1rem;
+  color: #f1f5f9;
+  margin: 0;
+}
+.tableHeader p {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 0.125rem 0 0 0;
+}
+
+.tableEl {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.tableEl th {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #1e293b;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background-color: rgba(2, 6, 23, 0.3);
+}
+
+.tableEl td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.4);
+}
+.tableEl tr:hover td {
+  background-color: rgba(30, 41, 59, 0.2);
+}
+
+.vendorTitle {
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0;
+}
+.vendorSub {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+}
+.badgeActive {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.badgeProcessing {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* Module Control fallbacks */
+.panelCard {
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 1rem;
+  padding: 2rem;
+  text-align: center;
+  max-width: 42rem;
+  margin: 3rem auto;
+}
+.panelIcon {
+  width: 3rem;
+  height: 3rem;
+  background-color: rgba(37, 99, 235, 0.1);
+  color: #3b82f6;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem auto;
+}
+.panelIcon svg { width: 1.5rem; height: 1.5rem; }
+.panelCard h3 { font-size: 1.25rem; font-weight: 900; color: #f1f5f9; margin: 0; }
+.panelCard p { font-size: 0.875rem; color: #94a3b8; margin: 0.5rem auto 0 auto; }
+.panelButton {
+  margin-top: 1.5rem;
+  background-color: #2563eb;
+  color: white;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+}
+
+.telemetrySplit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+.telCard { background-color: #0f172a; border: 1px solid #1e293b; border-radius: 1rem; padding: 1.5rem; }
+.telCardHeader { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
+.telCardHeader h4 { font-weight: 800; color: #e2e8f0; margin: 0; }
+.dotBlue { background-color: #3b82f6; width: 0.5rem; height: 0.5rem; border-radius: 50%; }
+.dotPurple { background-color: #a855f7; width: 0.5rem; height: 0.5rem; border-radius: 50%; }
+
+.terminalBox {
+  background-color: #020617;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #1e293b;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.textEmerald { color: #34d399; }
+.textBlue { color: #60a5fa; }
+
+.servicesBox {
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.servicesBox h3 { font-weight: 800; color: #f1f5f9; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+.serviceRow { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: rgba(2, 6, 23, 0.5); border-radius: 0.75rem; border: 1px solid #1e293b; }
+.serviceEndpoint { font-weight: 700; font-family: monospace; color: #cbd5e1; margin: 0; }
+.serviceLabel { color: #64748b; margin: 0.125rem 0 0 0; }
+.serviceBadge { font-family: monospace; color: #34d399; font-weight: 700; background-color: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.1); padding: 0.25rem 0.5rem; border-radius: 0.25rem; }
+
+.rowTextMuted {
+  color: #64748b; /* Slate-500 muted grey to push it into the background */
+}
+
+.rowTextMono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #94a3b8; /* Slate-400 for a clean code/date stamp look */
+  font-size: 0.8rem;
+}
